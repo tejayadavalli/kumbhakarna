@@ -4,12 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import kumbhakarna.model.RevenuInfoEntry;
+import kumbhakarna.model.RoomData;
+import kumbhakarna.model.RoomStatus;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -44,6 +48,26 @@ public class InventoryDao {
             return new RevenuInfoEntry(date, DEFAULT_COURT_REVENUE, DEFAULT_COURT_REVENUE, new ArrayList<>(), false,
                     null, null, null, null, null);
         }
+    }
+
+
+    public Map<String, RoomData> getRoomStatus(){
+        Map<String, RoomData> roomDataMap = new HashMap<>();
+        try {
+            PreparedStatement st = connection.prepareStatement("SELECT * FROM room_status");
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                String room = rs.getString(1);
+                String status = rs.getString(2);
+                roomDataMap.put(room, new RoomData(RoomStatus.valueOf(status), null
+                        , null, null, null, null, null, null, null));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return roomDataMap;
+
     }
 
     public List<RevenuInfoEntry> getRevenueInfoEntries(String startDate, String endDate){

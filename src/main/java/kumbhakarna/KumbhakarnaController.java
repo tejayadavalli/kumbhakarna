@@ -3,8 +3,10 @@ package kumbhakarna;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.JsonObject;
+import kumbhakarna.Response.GetHotelStatusResponse;
 import kumbhakarna.Response.SummaryResponse;
 import kumbhakarna.dao.InventoryDao;
+import kumbhakarna.model.RoomData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -32,8 +35,8 @@ public class KumbhakarnaController {
 
     @Autowired
     public KumbhakarnaController(InventoryDao inventoryDao) throws IOException {
-        this.slotsFile = this.readResource("kumbhakarna.html", Charsets.UTF_8);
-        this.summaryFile = this.readResource("summary.html", Charsets.UTF_8);
+        this.summaryFile = this.readResource("html/summary.html", Charsets.UTF_8);
+        this.slotsFile = this.readResource("html/kumbhakarna.html", Charsets.UTF_8);
 
         this.inventoryDao = inventoryDao;
 
@@ -53,9 +56,10 @@ public class KumbhakarnaController {
         return this.summaryFile;
     }
 
-    @RequestMapping(value = "/revenue/{date}", method = RequestMethod.GET, produces="application/json")
-    public String revenueInfo(@PathVariable("date") String date) {
-        return inventoryDao.getRevenueInfo(date).toString();
+    @RequestMapping(value = "/get-status", method = RequestMethod.GET, produces="application/json")
+    public GetHotelStatusResponse getRoomsStatus() {
+        Map<String, RoomData> roomStatus = inventoryDao.getRoomStatus();
+        return new GetHotelStatusResponse(roomStatus);
     }
 
     @RequestMapping(value = "/summary",  method = RequestMethod.POST, consumes = "application/json")
