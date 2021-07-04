@@ -19,14 +19,18 @@ public class RoomData {
     private final Integer guestCount;
     @JsonProperty(value ="extraBed")
     private final Boolean extraBed;
+    @JsonProperty(value ="linkedCheckin")
+    private final String linkedCheckin;
     @JsonProperty(value ="plan")
     private final String plan;
     @JsonProperty(value ="tariff")
     private final Integer tariff;
     @JsonProperty(value ="checkInTime")
-    private final Long checkInTime;
+    private final String checkInTime;
     @JsonProperty(value ="checkOutTime")
-    private final Long checkOutTime;
+    private final String checkOutTime;
+    @JsonProperty(value ="remark")
+    private final String remark;
 
     @Override
     public String toString() {

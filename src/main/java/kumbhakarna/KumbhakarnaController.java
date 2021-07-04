@@ -6,13 +6,16 @@ import com.google.gson.JsonObject;
 import kumbhakarna.Response.GetHotelStatusResponse;
 import kumbhakarna.Response.SummaryResponse;
 import kumbhakarna.dao.InventoryDao;
+import kumbhakarna.model.RevenuInfoEntry;
+import kumbhakarna.model.RevenuInfoEntry.SlotInfo;
 import kumbhakarna.model.RoomData;
+import kumbhakarna.model.RoomInfoEntry;
+import kumbhakarna.model.RoomStatus;
+import kumbhakarna.requests.SummaryRequest;
+import kumbhakarna.requests.UpdateRoomStatusRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import kumbhakarna.model.RevenuInfoEntry;
-import kumbhakarna.model.RevenuInfoEntry.SlotInfo;
-import kumbhakarna.requests.SummaryRequest;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -58,8 +61,46 @@ public class KumbhakarnaController {
 
     @RequestMapping(value = "/get-status", method = RequestMethod.GET, produces="application/json")
     public GetHotelStatusResponse getRoomsStatus() {
-        Map<String, RoomData> roomStatus = inventoryDao.getRoomStatus();
+        Map<String, RoomData> roomStatus = inventoryDao.getAllRoomStatus();
         return new GetHotelStatusResponse(roomStatus);
+    }
+
+    @RequestMapping(value = "/update-status", method = RequestMethod.POST, produces="application/json")
+    public String updateRoomStatus(@RequestBody UpdateRoomStatusRequest updateRoomStatusRequest) {
+        String room = updateRoomStatusRequest.getRoom();
+        RoomInfoEntry roomInfoEntry = inventoryDao.getRoomStatus(room);
+        String stateChange = roomInfoEntry.getRoomStatus().name() + "#" +
+                updateRoomStatusRequest.getRoomStatus().name();
+        String phone = updateRoomStatusRequest.getPhone();
+        String checkInTime = updateRoomStatusRequest.getCheckInTime();
+        String remark = updateRoomStatusRequest.getRemark();
+        Integer guestCount = updateRoomStatusRequest.getGuestCount();
+        Boolean extraBed = updateRoomStatusRequest.getExtraBed();
+        String name = updateRoomStatusRequest.getName();
+        String plan = updateRoomStatusRequest.getPlan();
+        Integer tariff = updateRoomStatusRequest.getTariff();
+        switch (stateChange){
+            case "AVAILABLE#OCCUPIED":
+                String checkInId = inventoryDao
+                        .checkIn(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
+                inventoryDao.updateRoomStatus(room, updateRoomStatusRequest.getRoomStatus(), checkInId);
+                break;
+            case "OCCUPIED#OCCUPIED":
+                String linkedCheckIn = roomInfoEntry.getLinkedCheckIn();
+                inventoryDao.updateCheckin(linkedCheckIn, phone, guestCount, extraBed, plan, tariff, checkInTime,
+                        null,remark);
+                break;
+            case "OCCUPIED#CHECKOUT":
+                inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
+                break;
+            case "CHECKOUT#AVAILABLE":
+                inventoryDao.updateRoomStatus(room, RoomStatus.AVAILABLE, null);
+                break;
+            default:
+                break;
+
+        }
+        return "{}";
     }
 
     @RequestMapping(value = "/summary",  method = RequestMethod.POST, consumes = "application/json")

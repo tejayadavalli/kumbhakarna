@@ -17,8 +17,9 @@ Create Table check_in(
     extra_bed boolean,
     plan text,
     tariff int,
-    check_in_time TIMESTAMP,
-    check_out_time TIMESTAMP,
+    remark text,
+    check_in_time text,
+    check_out_time text,
     FOREIGN KEY(phone)
 REFERENCES guest(phone)
 );
