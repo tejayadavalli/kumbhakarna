@@ -34,87 +34,49 @@
 <body>
 <div class="container">
     <div class="row">
-        <div class="col-sm-4">
+
+        <div class="col-sm-3" style="padding:5px;">
+            <br/>
+            <button type="button"  class="btn btn-info btn-block right" onclick="fetchSummary(true)" width = "200px">Current CheckIns</button>
+        </div>
+        <div class="col-sm-3">
             <label for="datepicker1">Start Date</label>
             <input id="datepicker1"  autocomplete="off"/>
             <br/>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-3">
             <label for="datepicker2">End Date</label>
             <input id="datepicker2" autocomplete="off"/>
         </div>
-        <div class="col-sm-4">
-            <strong>Select Language:</strong>
-            <select id="multiple-checkboxes" multiple="multiple">
-                <option value="s5amTo6am">5amTo6am</option>
-                <option value="s6amTo7am">6amTo7am</option>
-                <option value="s7amTo8am">7amTo8am</option>
-                <option value="s8amTo9am">8amTo9am</option>
-                <option value="s9amTo10am">9amTo10am</option>
-                <option value="s10amTo11am">10amTo11am</option>
-                <option value="s11amTo12pm">11amTo12pm</option>
-                <option value="s12pmTo1pm">12pmTo1pm</option>
-                <option value="s1pmTo2pm">1pmTo2pm</option>
-                <option value="s2pmTo3pm">2pmTo3pm</option>
-                <option value="s3pmTo4pm">3pmTo4pm</option>
-                <option value="s4pmTo5pm">4pmTo5pm</option>
-                <option value="s5pmTo6pm">5pmTo6pm</option>
-                <option value="s6pmTo7pm">6pmTo7pm</option>
-                <option value="s7pmTo8pm">7pmTo8pm</option>
-                <option value="s8pmTo9pm">8pmTo9pm</option>
-                <option value="s9pmTo10pm">9pmTo10pm</option>
-                <option value="s10pmTo11pm">10pmTo11pm</option>
-            </select>
+        <div class="col-sm-3" style="padding:5px;">
+            <br/>
+            <button type="button"  class="btn btn-success btn-block right" onclick="fetchSummary(false)" width = "200px">Summary</button>
         </div>
 
     </div>
 </div>
-<div class="row">
-    <div class="col-sm-4">
-    </div>
-    <div class="col-sm-4">
-        <button type="button"  class="btn btn-success btn-block right" onclick="fetchSummary()" width = "200px">Summary</button>
-    </div>
 
-    </div>
 <div class="row" id="summaryContent">
 
 </div>
-</div>
 <script>
         $('#datepicker1').datepicker({
-            uiLibrary: 'bootstrap'
+            uiLibrary: 'bootstrap',
+            format: 'yyyy/mm/dd'
         });
         $('#datepicker2').datepicker({
-            uiLibrary: 'bootstrap'
+            uiLibrary: 'bootstrap',
+            format: 'yyyy/mm/dd'
         });
-    var selection = [];
-    $(document).ready(function() {
-        $('#multiple-checkboxes').multiselect({
-          includeSelectAllOption: true,
-          allSelectedText: 'All' ,
-          onChange: function(element, checked) {
-            var brands = $('#multiple-checkboxes option:selected');
-            $(brands).each(function(index, brand){
-                selection.push(brand);
-            });
 
-            console.log(selection);
-        }
-        });
-    });
-
-    function fetchSummary(){
-      var dateParts1 = $("#datepicker1").val().split("/");
-      var startDate = dateParts1[2] + "-" + dateParts1[0] + "-" + dateParts1[1];
-      var dateParts2 = $("#datepicker2").val().split("/");
-      var endDate = dateParts2[2] + "-" + dateParts2[0] + "-" + dateParts2[1];
-      var selectedSlots  = $("#multiple-checkboxes").val();
+    function fetchSummary(current){
+      var startDate = $("#datepicker1").val().trim();
+      var endDate = $("#datepicker2").val().trim();
 
       var data = {};
       data["startDate"] = startDate;
       data["endDate"] = endDate;
-      data["slotsSelected"] = selectedSlots;
+      data["getCurrentRooms"] = current;
 
        $.ajax({
                url: '/summary',
@@ -132,38 +94,38 @@
            });
     }
 
-      function makeTableHTML(slotSummaries) {
-            var result =         "<br/> <hr> <br/><table class=\"table table-striped\" style = \"margin-left: auto;margin-right: auto;width:70%;\"> <thead>\n" +
+      function makeTableHTML(data) {
+            var result =         "<br/> <hr> <br/><table class=\"table table-striped\" style = \"text-align:center;margin-left: auto;margin-right: auto;width:70%;\"> <thead>\n" +
                 "    <tr>\n" +
-                "      <th scope=\"col\">Date</th>\n" +
-                "      <th scope=\"col\">Slot</th>\n" +
-                "      <th scope=\"col\">Court</th>\n" +
-                "      <th scope=\"col\">Revenue</th>\n" +
+                "      <th scope=\"col\">S.No</th>\n" +
+                "      <th scope=\"col\">Name</th>\n" +
+                "      <th scope=\"col\">Plan</th>\n" +
+                "      <th scope=\"col\">Tariff</th>\n" +
+                "      <th scope=\"col\">Room</th>\n" +
+                "      <th scope=\"col\">Check-In</th>\n" +
+                "      <th scope=\"col\">Check-Out</th>\n" +
+                "      <th scope=\"col\">Guest Count</th>\n" +
+                "      <th scope=\"col\">Extra Bed</th>\n" +
                 "      <th scope=\"col\">Remark</th>\n" +
-                "      <th scope=\"col\">Mode</th>\n" +
                 "    </tr>\n" +
                 "  </thead>\n" +
                 "  <tbody>";
-            var totalRevenue = 0;
-            for(var i=0; i<slotSummaries.length; i++) {
+
+            var checkInSummaries = data['checkInSummaries'];
+            for(var i=0; i<checkInSummaries.length; i++) {
                 result += "<tr>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["date"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["timing"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["court"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["revenue"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["remark"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+slotSummaries[i]["paymentMode"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["name"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["plan"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["tariff"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["room"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["checkInTime"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+((checkInSummaries[i]["checkOutTime"] != null) ? checkInSummaries[i]["checkOutTime"]: '')+"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+(checkInSummaries[i]["extraBed"] ? 'Yes' : 'No') +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["remark"] +"</td>";
                 result += "</tr>";
-                totalRevenue = totalRevenue + parseInt(slotSummaries[i]["revenue"]);
                 }
-                result += "<tr>";
-                result += "<td>" + "</td>";
-                result += "<td>" + "</td>";
-                result += "<td> <b>Total </b>" +"</td>";
-                result += "<td>" + totalRevenue + "</td>";
-                result += "<td>" + "</td>";
-                result += "<td>" + "</td>";
-                result += "</tr>";
 
             result += "</tbody></table>";
             return result;

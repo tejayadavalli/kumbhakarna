@@ -23,3 +23,6 @@ Create Table check_in(
     FOREIGN KEY(phone)
 REFERENCES guest(phone)
 );
+
+CREATE INDEX ON check_in(check_in_time);
+CREATE INDEX ON check_in(check_out_time);

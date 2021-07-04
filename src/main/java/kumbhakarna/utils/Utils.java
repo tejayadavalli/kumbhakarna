@@ -1,34 +1,31 @@
 package kumbhakarna.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.gson.JsonObject;
-import org.postgresql.util.PGobject;
-
-import java.io.IOException;
 
 public class Utils {
     private static JsonMapper mapper = new JsonMapper();
-    public static Object convertToDatabaseColumn(JsonObject eventData) {
-        try {
-            PGobject out = new PGobject();
-            out.setType("json");
-            out.setValue(eventData.toString());
-            return out;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to serialize to json field ", e);
+
+    public static String convertToDBDate(String date){
+        if(date == null) return null;
+        String[] parts = date.split(" ");
+        String[] dateParts = parts[0].split("/");
+        StringBuilder reverseDateString = new StringBuilder();
+        for(int i=2; i>=0; i--){
+            reverseDateString.append(dateParts[i]).append("/");
         }
+        return reverseDateString.substring(0, reverseDateString.length()-1) +  " " +
+                parts[1] + " " + parts[2];
     }
 
-    public static JsonObject convertToEntityAttribute(Object eventData) {
-        try {
-            if (eventData instanceof PGobject && ((PGobject) eventData).getType().equals("json")) {
-                return mapper.reader(new TypeReference<JsonObject>() {
-                }).readValue(((PGobject) eventData).getValue());
-            }
-            return new JsonObject();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Unable to deserialize to json field ", e);
-        }
+    public static String convertToHumanReadableDate(String date){
+        return convertToDBDate(date);
+    }
+
+    public static void main(String[] args) {
+        String date = "04/07/2021 10:26 AM";
+        String machineDate = convertToDBDate(date);
+        String humanReadableDate = convertToHumanReadableDate(machineDate);
+        System.out.println(machineDate);
+        System.out.println(humanReadableDate);
     }
 }

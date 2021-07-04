@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.util.List;
 
 @AllArgsConstructor
 @Getter
@@ -14,6 +13,6 @@ public class SummaryRequest implements Serializable {
     private String startDate;
     @JsonProperty(value = "endDate")
     private String endDate;
-    @JsonProperty(value = "slotsSelected")
-    private List<String> slotsSelected;
+    @JsonProperty(value = "getCurrentRooms")
+    private Boolean getCurrentRooms;
 }

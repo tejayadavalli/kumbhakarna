@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import kumbhakarna.Response.GetHotelStatusResponse;
 import kumbhakarna.Response.SummaryResponse;
 import kumbhakarna.dao.InventoryDao;
-import kumbhakarna.model.RevenuInfoEntry;
-import kumbhakarna.model.RevenuInfoEntry.SlotInfo;
 import kumbhakarna.model.RoomData;
 import kumbhakarna.model.RoomInfoEntry;
 import kumbhakarna.model.RoomStatus;
@@ -15,7 +13,10 @@ import kumbhakarna.requests.SummaryRequest;
 import kumbhakarna.requests.UpdateRoomStatusRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -24,8 +25,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.SQLException;
 import java.util.Map;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -122,41 +122,16 @@ public class KumbhakarnaController {
 
 
     @RequestMapping(value = "/summary",  method = RequestMethod.POST, consumes = "application/json")
-    public List<SummaryResponse.SlotSummary> getSummary(@RequestBody SummaryRequest summaryRequest) {
+    public SummaryResponse getSummary(@RequestBody SummaryRequest summaryRequest)
+            throws SQLException {
         String startDate = summaryRequest.getStartDate();
         String endDate = summaryRequest.getEndDate();
-        List<SummaryResponse.SlotSummary> slotSummaries = new ArrayList<>();
-        List<RevenuInfoEntry> revenueInfoEntries = inventoryDao.getRevenueInfoEntries(startDate, endDate);
-        revenueInfoEntries.forEach(
-                revenueInfoEntry -> {
-                    String date = revenueInfoEntry.getId();
-                    for(String slotTime : summaryRequest.getSlotsSelected()){
-                        SlotInfo courtOneSlotInfo = revenueInfoEntry.getRequestedSlot("court1", slotTime);
-                        SlotInfo courtTwoSlotInfo = revenueInfoEntry.getRequestedSlot("court2", slotTime);
-                        if(courtOneSlotInfo.getRevenue() != 0){
-                            slotSummaries.add(new SummaryResponse.SlotSummary(date, slotTime, "Court 1", courtOneSlotInfo));
-                        }
+        Boolean getCurrentRooms = summaryRequest.getGetCurrentRooms();
 
-                        if(courtTwoSlotInfo.getRevenue() != 0){
-                            slotSummaries.add(new SummaryResponse.SlotSummary(date, slotTime, "Court 2", courtTwoSlotInfo));
-                        }
-                    }
-                }
-        );
-        return slotSummaries;
-    }
-
-    @RequestMapping(value = "/revenue/{date}",  method = RequestMethod.POST, consumes = "application/json")
-    public String revenueInfo(@PathVariable("date") String date,
-                        @RequestBody RevenuInfoEntry revenuInfoEntry) {
-        inventoryDao.updateRevenueInfoEntry(date, revenuInfoEntry);
-        completedFuture(null)
-                .thenRun(()->{
-                    if(!revenuInfoEntry.isSendUpdate()) return;
-                });
-
-        return "{}";
-
+        if(Boolean.TRUE.equals(getCurrentRooms)){
+            return new SummaryResponse(inventoryDao.getCurrentOccupiedRooms());
+        }
+        return new SummaryResponse(inventoryDao.getCheckIns(startDate, endDate));
     }
 
 
@@ -168,7 +143,7 @@ public class KumbhakarnaController {
                              String plan,
                              Integer tariff,
                              Boolean extraBed) throws IOException {
-        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "hettps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml" , "<flockml>" +
                 "<b>" +  checkIn + "</b><br/>" +
