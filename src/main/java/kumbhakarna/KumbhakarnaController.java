@@ -66,7 +66,7 @@ public class KumbhakarnaController {
     }
 
     @RequestMapping(value = "/update-status", method = RequestMethod.POST, produces="application/json")
-    public String updateRoomStatus(@RequestBody UpdateRoomStatusRequest updateRoomStatusRequest) {
+    public String updateRoomStatus(@RequestBody UpdateRoomStatusRequest updateRoomStatusRequest) throws IOException {
         String room = updateRoomStatusRequest.getRoom();
         RoomInfoEntry roomInfoEntry = inventoryDao.getRoomStatus(room);
         String stateChange = roomInfoEntry.getRoomStatus().name() + "#" +
@@ -83,6 +83,15 @@ public class KumbhakarnaController {
             case "AVAILABLE#OCCUPIED":
                 String checkInId = inventoryDao
                         .checkIn(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
+                completedFuture(null)
+                        .thenRunAsync(()-> {
+                            try {
+                                sendMessage("Check-In", room, name, phone,
+                                        guestCount, plan, tariff, extraBed);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        });
                 inventoryDao.updateRoomStatus(room, updateRoomStatusRequest.getRoomStatus(), checkInId);
                 break;
             case "OCCUPIED#OCCUPIED":
@@ -92,7 +101,15 @@ public class KumbhakarnaController {
                 break;
             case "OCCUPIED#CHECKOUT":
                 inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
-                break;
+                completedFuture(null)
+                        .thenRunAsync(()-> {
+                            try {
+                                sendMessage("Check-Out", room, name, phone,
+                                        guestCount, plan, tariff, extraBed);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        });                break;
             case "CHECKOUT#AVAILABLE":
                 inventoryDao.updateRoomStatus(room, RoomStatus.AVAILABLE, null);
                 break;
@@ -102,6 +119,7 @@ public class KumbhakarnaController {
         }
         return "{}";
     }
+
 
     @RequestMapping(value = "/summary",  method = RequestMethod.POST, consumes = "application/json")
     public List<SummaryResponse.SlotSummary> getSummary(@RequestBody SummaryRequest summaryRequest) {
@@ -134,15 +152,7 @@ public class KumbhakarnaController {
         inventoryDao.updateRevenueInfoEntry(date, revenuInfoEntry);
         completedFuture(null)
                 .thenRun(()->{
-                    try {
-                        if(!revenuInfoEntry.isSendUpdate()) return;
-                        makePostRequest(revenuInfoEntry.getMessageSlot(),
-                                revenuInfoEntry.getMessageRevenue(), revenuInfoEntry.getMessageRemark(),
-                                revenuInfoEntry.getMessageDate(),
-                                revenuInfoEntry.getMessagePaymentMode());
-                    } catch (IOException e) {
-
-                    }
+                    if(!revenuInfoEntry.isSendUpdate()) return;
                 });
 
         return "{}";
@@ -150,19 +160,25 @@ public class KumbhakarnaController {
     }
 
 
-    public static void makePostRequest(String slotInfo,
-                                String revenue,
-                                String remark,
-                                String date, String paymentMode) throws IOException {
-        String query = "https://api1.flock.com/hooks/sendMessage/816c2b51-5b23-44ed-bd56-ac664f68acde";
+    private void sendMessage(String checkIn,
+                             String room,
+                             String name,
+                             String phone,
+                             Integer guestCount,
+                             String plan,
+                             Integer tariff,
+                             Boolean extraBed) throws IOException {
+        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
-        String[] time = slotInfo.split("To");
         jsonObject.addProperty("flockml" , "<flockml>" +
-                "<b>Date: </b>" +  date + "<br/>" +
-                "<b>Slot: </b>" + time[0].substring(1).toUpperCase() + " - " + time[1].toUpperCase() + "<br/>" +
-                "<b>Revenue: </b>" + revenue + "<br/>" +
-                "<b>Payment Mode: </b>" + paymentMode + "<br/>" +
-                "<b>Remark: </b>" + remark + "<br/>" +
+                "<b>" +  checkIn + "</b><br/>" +
+                "<b>Room: </b>" +  room + "<br/>" +
+                "<b>Tariff: </b>" +  tariff + "<br/>" +
+                "<b>Plan: </b>" +  plan + "<br/>" +
+                "<b>Guest Count: </b>" +  guestCount + "<br/>" +
+                "<b>Name: </b>" +  name + "<br/>" +
+                "<b>Phone: </b>" +  phone + "<br/>" +
+                "<b>Extra Bed: </b>" +  (extraBed ? "Yes" : "No") + "<br/>" +
                 "</flockml>");
 
         URL url = new URL(query);
