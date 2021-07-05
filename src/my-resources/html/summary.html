@@ -19,7 +19,7 @@
   </style>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap DatePicker</title>
+    <title>Kumbhakarna Summary</title>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 
     <script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
@@ -115,7 +115,14 @@
                 "  <tbody>";
 
             var checkInSummaries = data['checkInSummaries'];
+            var totalRoomBill = 0;
+            var totalFoodBill = 0;
+            var totalDays = 0;
             for(var i=0; i<checkInSummaries.length; i++) {
+                totalDays = totalDays +  ((checkInSummaries[i]["days"] != null) ? checkInSummaries[i]["days"]: 0);
+                totalRoomBill = totalRoomBill +  ((checkInSummaries[i]["roomBill"] != null) ? checkInSummaries[i]["roomBill"]: 0);
+                totalFoodBill = totalFoodBill +  ((checkInSummaries[i]["foodBill"] != null) ? checkInSummaries[i]["foodBill"]: 0);
+
                 result += "<tr>";
                 result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["name"] +"</td>";
@@ -132,6 +139,22 @@
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["remark"] +"</td>";
                 result += "</tr>";
                 }
+
+                result += "<tr style ='background-color:#E7E9EB'>";
+                result += "<td style =\"word-break:break-all;\"><b>Total</b></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\">"+totalDays+"</td>";
+                result += "<td style =\"word-break:break-all;\">"+totalRoomBill+"</td>";
+                result += "<td style =\"word-break:break-all;\">"+ totalFoodBill +"</td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "<td style =\"word-break:break-all;\"></td>";
+                result += "</tr>";
 
             result += "</tbody></table>";
             return result;

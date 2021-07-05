@@ -185,6 +185,7 @@ public class InventoryDao {
                          String remark){
         RoomInfoEntry roomStatus = getRoomStatus(room);
         DateFormat dtf = new SimpleDateFormat("dd/MM/yyy hh:mm aa");
+        dtf.setTimeZone(TimeZone.getTimeZone("Asia/Calcutta"));
         String checkout = dtf.format(new Date());
         addUser(phone, name);
         String id = roomStatus.getLinkedCheckIn();
