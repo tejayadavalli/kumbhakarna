@@ -24,5 +24,11 @@ Create Table check_in(
 REFERENCES guest(phone)
 );
 
+cd
+
 CREATE INDEX ON check_in(check_in_time);
 CREATE INDEX ON check_in(check_out_time);
+
+Alter table check_in add column days int;
+Alter table check_in add column room_bill int;
+Alter table check_in add column food_bill int;

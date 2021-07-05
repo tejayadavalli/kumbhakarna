@@ -30,7 +30,12 @@ public class UpdateRoomStatusRequest implements Serializable {
     private String checkInTime;
     @JsonProperty(value = "remark")
     private String remark;
-
+    @JsonProperty(value = "days")
+    private Integer days;
+    @JsonProperty(value = "roomBill")
+    private Integer roomBill;
+    @JsonProperty(value = "foodBill")
+    private Integer foodBill;
 
     public RoomStatus getRoomStatus(){
         return RoomStatus.valueOf(roomStatus);

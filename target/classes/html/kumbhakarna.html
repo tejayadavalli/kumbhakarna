@@ -101,6 +101,12 @@
            }
            }
 
+           function isNumeric(str) {
+                if (typeof str != "string") return false // we only process strings!
+                return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+                !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+           }
+
            function submitData(room, action){
               var postData = {};
               postData['room'] = room.trim();
@@ -113,6 +119,7 @@
               postData['tariff'] = parseInt($("#tariff").val());
               postData['checkInTime'] = $("#datepicker1").val();
               postData['guestCount'] = parseInt($("#guest_count").val());
+
               if(postData['name'].length == 0){
                 alert("Provide Valid Name");
                 return;
@@ -128,16 +135,46 @@
                 return;
               }
 
-              if(isNaN(postData['tariff']) || postData['tariff'] < 100){
-                alert("Provide Valid Tariff");
-                return;
-              }
 
              if(postData['checkInTime'].length == 0){
                 alert("Provide Valid Check In");
                 return;
               }
 
+             if(isNaN(postData['tariff']) || postData['tariff'] < 100){
+                alert("Provide Valid Tariff");
+                return;
+              }
+
+              if($("#days").val() === '' && postData['roomStatus'] != 'CHECKOUT' ){
+                postData['days'] = null;
+              } else{
+                if(!isNumeric($("#days").val())){
+                    alert("Provide Valid Number of Days");
+                    return;
+                }
+                postData['days'] = parseInt($("#days").val());
+              }
+
+              if($("#room-bill").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['roomBill'] = null;
+              } else{
+                if(!isNumeric($("#room-bill").val())){
+                    alert("Provide Valid Room Bill");
+                    return;
+                }
+                postData['roomBill'] = parseInt($("#room-bill").val());
+              }
+
+              if($("#food-bill").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['foodBill'] = null;
+              } else{
+                if(!isNumeric($("#food-bill").val())){
+                    alert("Provide Valid Food Bill");
+                    return;
+                }
+                postData['foodBill'] = parseInt($("#food-bill").val());
+              }
 
               $.ajax({
                url: './update-status',
@@ -166,6 +203,10 @@
                 $("#remark").val(data["remark"]);
                 $("#datepicker1").val(data["checkInTime"]);
                 $("#tariff").val(parseInt(data["tariff"]));
+                $("#days").val(data["days"]);
+                $("#room-bill").val(data["roomBill"]);
+                $("#food-bill").val(data["foodBill"]);
+
                 switch(data["plan"]){
                    case "CP":
                     $("#plan-div .toggle").removeClass("btn-info").removeClass("off").addClass("btn-success");
@@ -192,14 +233,17 @@
                      case "AVAILABLE":
                         baseString = baseString + '&nbsp' + checkInButton(room);
                         $("#modal-footer").html(baseString);
+                        $('#checkout-info').css('display', 'none');
                         break;
                      case "OCCUPIED":
-                        baseString = baseString + '&nbsp' + updateButton(room) + '&nbsp' + checkoutButton(room);
+                        baseString = baseString + '&nbsp' + updateButtonOccupied(room) + '&nbsp' + checkoutButton(room);
                         $("#modal-footer").html(baseString);
+                        $('#checkout-info').css('display', 'block');
                         break;
                      case "CHECKOUT":
-                        baseString = baseString + '&nbsp' + roomCleanedButton(room);
+                        baseString = baseString + '&nbsp' + updateButtonCheckout(room) + '&nbsp' + roomCleanedButton(room);
                         $("#modal-footer").html(baseString);
+                        $('#checkout-info').css('display', 'block');
                         break;
                      default:
                         break;
@@ -216,8 +260,12 @@
         return '<button type="button" class="btn btn-primary" onclick="submitData(\''+room + '\',' + '\'OCCUPIED\''+ ')">Check In</button>';
        }
 
-       function updateButton(room){
+       function updateButtonOccupied(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'OCCUPIED\''+ ')">Update</button>';
+       }
+
+       function updateButtonCheckout(room){
+        return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'CHECKOUT\''+ ')">Update</button>';
        }
 
        function roomCleanedButton(room){
@@ -332,6 +380,27 @@
                             <div class="col-xs-4" style="text-align:center;font-size: 17px;">
                                 <label>Tariff: &nbsp</label>
                                 <input id="tariff"  maxlength="8" size="8" style="text-align:center;" autocomplete="off"/>
+                            </div>
+                        </div>
+
+                        <div class="row" id="checkout-info" style="text-align:center;">
+                        </br>
+                            <h3> Check-Out Info</h3>
+                            <div class="col-xs-4" style="text-center:left;font-size: 17px;">
+                                <label for="days">Days &nbsp</label>
+                            </br>
+                                <input id="days"  style="text-align:center;" maxlength="10" size="10" autocomplete="off"/>
+                            </div>
+
+                            <div class="col-xs-4" style="text-align:center;font-size: 17px;">
+                                <label for="room-bill">Room Bill &nbsp</label>
+                                </br>
+                                <input id="room-bill"  style="text-align:center;" maxlength="10" size="10" autocomplete="off"/>
+                            </div>
+                            <div class="col-xs-4" style="text-center:left;font-size: 17px;">
+                                <label for="food-bill">Food Bill &nbsp</label>
+                                </br>
+                                <input id="food-bill"  style="text-align:center;" maxlength="10" size="10" autocomplete="off"/>
                             </div>
                         </div>
                         <br/>

@@ -95,7 +95,7 @@
     }
 
       function makeTableHTML(data) {
-            var result =         "<br/> <hr> <br/><table class=\"table table-striped\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;\"> <thead>\n" +
+            var result =         "<br/> <hr> <br/><table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;\"> <thead>\n" +
                 "    <tr>\n" +
                 "      <th scope=\"col\">S.No</th>\n" +
                 "      <th scope=\"col\">Name</th>\n" +
@@ -105,6 +105,9 @@
                 "      <th scope=\"col\">Check-In</th>\n" +
                 "      <th scope=\"col\">Check-Out</th>\n" +
                 "      <th scope=\"col\">Guest Count</th>\n" +
+                "      <th scope=\"col\">Days</th>\n" +
+                "      <th scope=\"col\">Room Bill</th>\n" +
+                "      <th scope=\"col\">Food Bill</th>\n" +
                 "      <th scope=\"col\">Extra Bed</th>\n" +
                 "      <th scope=\"col\">Remark</th>\n" +
                 "    </tr>\n" +
@@ -122,6 +125,9 @@
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["checkInTime"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+((checkInSummaries[i]["checkOutTime"] != null) ? checkInSummaries[i]["checkOutTime"]: '')+"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+((checkInSummaries[i]["days"] != null) ? checkInSummaries[i]["days"]: '')+"</td>";
+                result += "<td style =\"word-break:break-all;\">"+((checkInSummaries[i]["roomBill"] != null) ? checkInSummaries[i]["roomBill"]: '')+"</td>";
+                result += "<td style =\"word-break:break-all;\">"+((checkInSummaries[i]["foodBill"] != null) ? checkInSummaries[i]["foodBill"]: '')+"</td>";
                 result += "<td style =\"word-break:break-all;\">"+(checkInSummaries[i]["extraBed"] ? 'Yes' : 'No') +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["remark"] +"</td>";
                 result += "</tr>";

@@ -79,6 +79,10 @@ public class KumbhakarnaController {
         String name = updateRoomStatusRequest.getName();
         String plan = updateRoomStatusRequest.getPlan();
         Integer tariff = updateRoomStatusRequest.getTariff();
+        Integer days = updateRoomStatusRequest.getDays();
+        Integer roomBill = updateRoomStatusRequest.getRoomBill();
+        Integer foodBill = updateRoomStatusRequest.getFoodBill();
+
         switch (stateChange){
             case "AVAILABLE#OCCUPIED":
                 String checkInId = inventoryDao
@@ -95,12 +99,14 @@ public class KumbhakarnaController {
                 inventoryDao.updateRoomStatus(room, updateRoomStatusRequest.getRoomStatus(), checkInId);
                 break;
             case "OCCUPIED#OCCUPIED":
+            case "CHECKOUT#CHECKOUT":
                 String linkedCheckIn = roomInfoEntry.getLinkedCheckIn();
                 inventoryDao.updateCheckin(linkedCheckIn, phone, guestCount, extraBed, plan, tariff, checkInTime,
-                        null,remark);
+                        null, days, roomBill, foodBill, remark);
                 break;
             case "OCCUPIED#CHECKOUT":
-                inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
+                inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime,
+                        days, roomBill, foodBill, remark);
                 completedFuture(null)
                         .thenRunAsync(()-> {
                             try {
@@ -143,7 +149,7 @@ public class KumbhakarnaController {
                              String plan,
                              Integer tariff,
                              Boolean extraBed) throws IOException {
-        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "htfsdftps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml" , "<flockml>" +
                 "<b>" +  checkIn + "</b><br/>" +

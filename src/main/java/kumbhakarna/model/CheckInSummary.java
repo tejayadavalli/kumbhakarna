@@ -25,6 +25,12 @@ public class CheckInSummary {
     private final Integer guestCount;
     @JsonProperty(value ="extraBed")
     private final Boolean extraBed;
+    @JsonProperty(value ="days")
+    private final Integer days;
+    @JsonProperty(value ="roomBill")
+    private final Integer roomBill;
+    @JsonProperty(value ="foodBill")
+    private final Integer foodBill;
     @JsonProperty(value ="remark")
     private final String remark;
 

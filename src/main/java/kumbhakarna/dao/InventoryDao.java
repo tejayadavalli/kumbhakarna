@@ -49,11 +49,30 @@ public class InventoryDao {
                         .convertToHumanReadableDate(rs.getString("check_in_time"));
                 String checkOuttime = rs.getString("check_out_time");
                 String remark = rs.getString("remark");
+                Integer days = rs.getObject("days") == null ? null :
+                        rs.getInt("days");
+                Integer roomBill = rs.getObject("room_bill") == null ? null :
+                        rs.getInt("room_bill");
+                Integer foodBill = rs.getObject("food_bill") == null ? null :
+                        rs.getInt("food_bill");
 
-
-                roomDataMap.put(room, new RoomData(RoomStatus.valueOf(status), phone
-                        , name, guestCount, extra_bed, linkedCheckInId, plan, tariff,
-                        check_in_time, checkOuttime, remark));
+                RoomData roomData = RoomData.builder()
+                        .roomStatus(RoomStatus.valueOf(status))
+                        .phone(phone)
+                        .name(name)
+                        .guestCount(guestCount)
+                        .extraBed(extra_bed)
+                        .linkedCheckin(linkedCheckInId)
+                        .plan(plan)
+                        .tariff(tariff)
+                        .checkInTime(check_in_time)
+                        .checkOutTime(checkOuttime)
+                        .days(days)
+                        .roomBill(roomBill)
+                        .foodBill(foodBill)
+                        .remark(remark)
+                        .build();
+                roomDataMap.put(room, roomData);
             }
 
         } catch (Exception e) {
@@ -160,24 +179,37 @@ public class InventoryDao {
                          String plan,
                          Integer tariff,
                          String checkInTime,
+                         Integer days,
+                         Integer roomBill,
+                         Integer foodBill,
                          String remark){
         RoomInfoEntry roomStatus = getRoomStatus(room);
         DateFormat dtf = new SimpleDateFormat("dd/MM/yyy hh:mm aa");
         String checkout = dtf.format(new Date());
         addUser(phone, name);
         String id = roomStatus.getLinkedCheckIn();
-        updateCheckin(id, phone, guestCount, extraBed, plan, tariff, checkInTime, checkout, remark);
+        updateCheckin(id, phone, guestCount, extraBed, plan, tariff, checkInTime,
+                checkout, days, roomBill, foodBill, remark);
         updateRoomStatus(room, RoomStatus.CHECKOUT, id);
     }
 
-    public void updateCheckin(String id, String phone, Integer guestCount,
-                              Boolean extraBed, String plan, Integer tariff,
-                              String checkInTime, String checkout, String remark) {
+    public void updateCheckin(String id,
+                              String phone,
+                              Integer guestCount,
+                              Boolean extraBed,
+                              String plan,
+                              Integer tariff,
+                              String checkInTime,
+                              String checkout,
+                              Integer days,
+                              Integer roomBill,
+                              Integer foodBill,
+                              String remark) {
         checkInTime = Utils.convertToDBDate(checkInTime);
         checkout = Utils.convertToDBDate(checkout);
         String query = "INSERT INTO check_in(id) VALUES(?) on conflict(id) do update set " +
                 "phone = ?, guest_count= ?, extra_bed = ?, plan = ?, tariff = ?, check_in_time = ?, " +
-                "check_out_time = ?, remark = ?";
+                "check_out_time = ?, days = ?, room_bill = ?, food_bill = ?, remark = ?";
         try {
             PreparedStatement pst = connection.prepareStatement(query);
             pst.setString(1, id);
@@ -188,7 +220,10 @@ public class InventoryDao {
             pst.setInt(6, tariff);
             pst.setString(7, checkInTime);
             pst.setString(8, checkout);
-            pst.setString(9, remark);
+            pst.setObject(9, days);
+            pst.setObject(10, roomBill);
+            pst.setObject(11, foodBill);
+            pst.setString(12, remark);
 
             pst.execute();
         } catch (SQLException e) {
@@ -227,9 +262,11 @@ public class InventoryDao {
             String checkOuttime = Utils
                     .convertToHumanReadableDate(rs.getString("check_out_time"));
             String remark = rs.getString("remark");
-
+            Integer days = (rs.getObject("days") == null) ? null : rs.getInt("days");
+            Integer roomBill = (rs.getObject("room_bill") == null) ? null : rs.getInt("room_bill");
+            Integer foodBill = (rs.getObject("food_bill") == null) ? null : rs.getInt("food_bill");
             CheckInSummary checkInSummary = new CheckInSummary(name, room, tariff, plan, check_in_time,
-                    checkOuttime, guestCount, extra_bed, remark);
+                    checkOuttime, guestCount, extra_bed, days, roomBill, foodBill, remark);
             list.add(checkInSummary);
         }
 

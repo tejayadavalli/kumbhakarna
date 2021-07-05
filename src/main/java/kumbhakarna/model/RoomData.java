@@ -3,10 +3,12 @@ package kumbhakarna.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
+@Builder
 public class RoomData {
     private static final Gson gson = new Gson();
     @JsonProperty(value ="roomStatus")
@@ -29,8 +31,15 @@ public class RoomData {
     private final String checkInTime;
     @JsonProperty(value ="checkOutTime")
     private final String checkOutTime;
+    @JsonProperty(value ="days")
+    private final Integer days;
+    @JsonProperty(value ="roomBill")
+    private final Integer roomBill;
+    @JsonProperty(value ="foodBill")
+    private final Integer foodBill;
     @JsonProperty(value ="remark")
     private final String remark;
+
 
     @Override
     public String toString() {
