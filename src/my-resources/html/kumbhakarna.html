@@ -66,6 +66,7 @@
                success: function(data){
                  roomsData = data;
                  updateData();
+                 fetchSummary()
                },
                error: function (xhr, ajaxOptions, thrownError) {
                  $("#successIndicator").text(thrownError);
@@ -183,6 +184,7 @@
                contentType:"application/json; charset=utf-8",
                success: function(data){
                    refreshData();
+                   fetchSummary();
                    $('#cancel-btn').click();
                    $(".modal-backdrop").removeClass("modal-backdrop");
                },
@@ -251,6 +253,62 @@
 
            }
 
+    function fetchSummary(){
+      var data = {};
+      data["getCurrentRooms"] = true;
+
+       $.ajax({
+               url: '/summary',
+               type: 'post',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                  $("#summaryContent").html(makeTableHTML(data));
+
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               },
+               data: JSON.stringify(data)
+           });
+    }
+
+      function makeTableHTML(data) {
+            var result =         "<br/> <hr> <br/><table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:90%;font-size:19px;\"> <thead>\n" +
+                "    <tr>\n" +
+                "      <th scope=\"col\">S.No</th>\n" +
+                "      <th scope=\"col\">Name</th>\n" +
+                "      <th scope=\"col\">Plan</th>\n" +
+                "      <th scope=\"col\">Tariff</th>\n" +
+                "      <th scope=\"col\">Room</th>\n" +
+                "      <th scope=\"col\">Check-In</th>\n" +
+                "      <th scope=\"col\">Guest Count</th>\n" +
+                "      <th scope=\"col\">Extra Bed</th>\n" +
+                "      <th scope=\"col\">Remark</th>\n" +
+                "    </tr>\n" +
+                "  </thead>\n" +
+                "  <tbody>";
+
+            var checkInSummaries = data['checkInSummaries'];
+
+            for(var i=0; i<checkInSummaries.length; i++) {
+                result += "<tr>";
+                result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["name"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["plan"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["tariff"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["room"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["checkInTime"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+(checkInSummaries[i]["extraBed"] ? 'Yes' : 'No') +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["remark"] +"</td>";
+                result += "</tr>";
+                }
+                result += "</tr>";
+
+            result += "</tbody></table>";
+            return result;
+         }
 
        function checkoutButton(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+room + '\',\'CHECKOUT\')">Check Out</button>';
@@ -451,6 +509,10 @@
             <br/>
             <button type="button" style = "padding: 5px 5px;" class="btn btn-primary"></button> &nbsp Checkout
         </div>
+    </div>
+
+    <div class="row" id="summaryContent">
+
     </div>
 </div>
 </body>

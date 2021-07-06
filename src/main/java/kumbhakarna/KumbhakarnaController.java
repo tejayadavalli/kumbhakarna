@@ -49,23 +49,24 @@ public class KumbhakarnaController {
     private String readResource(final String fileName, Charset charset) throws IOException {
         return Resources.toString(Resources.getResource(fileName), charset);
     }
-    @RequestMapping(value = "/kumbhakarna", method = RequestMethod.GET, produces= MediaType.TEXT_HTML_VALUE)
+
+    @RequestMapping(value = "/kumbhakarna", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
     public String getHtmlPage() {
         return this.slotsFile;
     }
 
-    @RequestMapping(value = "/kumbhakarna/summary", method = RequestMethod.GET, produces= MediaType.TEXT_HTML_VALUE)
+    @RequestMapping(value = "/kumbhakarna/summary", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
     public String getSummaryPage() {
         return this.summaryFile;
     }
 
-    @RequestMapping(value = "/get-status", method = RequestMethod.GET, produces="application/json")
+    @RequestMapping(value = "/get-status", method = RequestMethod.GET, produces = "application/json")
     public GetHotelStatusResponse getRoomsStatus() {
         Map<String, RoomData> roomStatus = inventoryDao.getAllRoomStatus();
         return new GetHotelStatusResponse(roomStatus);
     }
 
-    @RequestMapping(value = "/update-status", method = RequestMethod.POST, produces="application/json")
+    @RequestMapping(value = "/update-status", method = RequestMethod.POST, produces = "application/json")
     public String updateRoomStatus(@RequestBody UpdateRoomStatusRequest updateRoomStatusRequest) throws IOException {
         String room = updateRoomStatusRequest.getRoom();
         RoomInfoEntry roomInfoEntry = inventoryDao.getRoomStatus(room);
@@ -83,15 +84,15 @@ public class KumbhakarnaController {
         Integer roomBill = updateRoomStatusRequest.getRoomBill();
         Integer foodBill = updateRoomStatusRequest.getFoodBill();
 
-        switch (stateChange){
+        switch (stateChange) {
             case "AVAILABLE#OCCUPIED":
                 String checkInId = inventoryDao
                         .checkIn(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
                 completedFuture(null)
-                        .thenRunAsync(()-> {
+                        .thenRunAsync(() -> {
                             try {
                                 sendMessage("Check-In", room, name, phone,
-                                        guestCount, plan, tariff, extraBed);
+                                        guestCount, plan, tariff, extraBed, remark);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -108,14 +109,15 @@ public class KumbhakarnaController {
                 inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime,
                         days, roomBill, foodBill, remark);
                 completedFuture(null)
-                        .thenRunAsync(()-> {
+                        .thenRunAsync(() -> {
                             try {
-                                sendMessage("Check-Out", room, name, phone,
-                                        guestCount, plan, tariff, extraBed);
+                                sendMessageCheckout("Check-Out", room, name, phone,
+                                        guestCount, plan, tariff, extraBed, days, roomBill, foodBill, remark);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                        });                break;
+                        });
+                break;
             case "CHECKOUT#AVAILABLE":
                 inventoryDao.updateRoomStatus(room, RoomStatus.AVAILABLE, null);
                 break;
@@ -126,40 +128,46 @@ public class KumbhakarnaController {
         return "{}";
     }
 
-
-    @RequestMapping(value = "/summary",  method = RequestMethod.POST, consumes = "application/json")
+    @RequestMapping(value = "/summary", method = RequestMethod.POST, consumes = "application/json")
     public SummaryResponse getSummary(@RequestBody SummaryRequest summaryRequest)
             throws SQLException {
         String startDate = summaryRequest.getStartDate();
         String endDate = summaryRequest.getEndDate();
         Boolean getCurrentRooms = summaryRequest.getGetCurrentRooms();
 
-        if(Boolean.TRUE.equals(getCurrentRooms)){
+        if (Boolean.TRUE.equals(getCurrentRooms)) {
             return new SummaryResponse(inventoryDao.getCurrentOccupiedRooms());
         }
         return new SummaryResponse(inventoryDao.getCheckIns(startDate, endDate));
     }
 
-
-    private void sendMessage(String checkIn,
-                             String room,
-                             String name,
-                             String phone,
-                             Integer guestCount,
-                             String plan,
-                             Integer tariff,
-                             Boolean extraBed) throws IOException {
+    private void sendMessageCheckout(String checkIn,
+                                     String room,
+                                     String name,
+                                     String phone,
+                                     Integer guestCount,
+                                     String plan,
+                                     Integer tariff,
+                                     Boolean extraBed,
+                                     Integer days,
+                                     Integer roomBill,
+                                     Integer foodBill,
+                                     String remark) throws IOException {
         String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("flockml" , "<flockml>" +
-                "<b>" +  checkIn + "</b><br/>" +
-                "<b>Room: </b>" +  room + "<br/>" +
-                "<b>Tariff: </b>" +  tariff + "<br/>" +
-                "<b>Plan: </b>" +  plan + "<br/>" +
-                "<b>Guest Count: </b>" +  guestCount + "<br/>" +
-                "<b>Name: </b>" +  name + "<br/>" +
-                "<b>Phone: </b>" +  phone + "<br/>" +
-                "<b>Extra Bed: </b>" +  (extraBed ? "Yes" : "No") + "<br/>" +
+        jsonObject.addProperty("flockml", "<flockml>" +
+                "<b>" + checkIn + "</b><br/>" +
+                "<b>Room: </b>" + room + "<br/>" +
+                "<b>Tariff: </b>" + tariff + "<br/>" +
+                "<b>Plan: </b>" + plan + "<br/>" +
+                "<b>Guest Count: </b>" + guestCount + "<br/>" +
+                "<b>Name: </b>" + name + "<br/>" +
+                "<b>Phone: </b>" + phone + "<br/>" +
+                "<b>Extra Bed: </b>" + (extraBed ? "Yes" : "No") + "<br/>" +
+                "<b>Days: </b>" + days + "<br/>" +
+                "<b>Room Bill: </b>" + roomBill + "<br/>" +
+                "<b>Food Bill: </b>" + foodBill + "<br/>" +
+                "<b>Remark: </b>" + remark + "<br/>" +
                 "</flockml>");
 
         URL url = new URL(query);
@@ -178,6 +186,48 @@ public class KumbhakarnaController {
         InputStream in = new BufferedInputStream(conn.getInputStream());
         String result = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
 
+        in.close();
+        conn.disconnect();
+    }
+
+    private void sendMessage(String checkIn,
+                             String room,
+                             String name,
+                             String phone,
+                             Integer guestCount,
+                             String plan,
+                             Integer tariff,
+                             Boolean extraBed,
+                             String remark) throws IOException {
+        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("flockml", "<flockml>" +
+                "<b>" + checkIn + "</b><br/>" +
+                "<b>Room: </b>" + room + "<br/>" +
+                "<b>Tariff: </b>" + tariff + "<br/>" +
+                "<b>Plan: </b>" + plan + "<br/>" +
+                "<b>Guest Count: </b>" + guestCount + "<br/>" +
+                "<b>Name: </b>" + name + "<br/>" +
+                "<b>Phone: </b>" + phone + "<br/>" +
+                "<b>Extra Bed: </b>" + (extraBed ? "Yes" : "No") + "<br/>" +
+                "<b>Remark: </b>" + remark + "<br/>" +
+                "</flockml>");
+
+        URL url = new URL(query);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(5000);
+        conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+        conn.setRequestMethod("POST");
+
+        OutputStream os = conn.getOutputStream();
+        os.write(jsonObject.toString().getBytes("UTF-8"));
+        os.close();
+
+        // read the response
+        InputStream in = new BufferedInputStream(conn.getInputStream());
+        String result = org.apache.commons.io.IOUtils.toString(in, "UTF-8");
 
         in.close();
         conn.disconnect();
