@@ -234,14 +234,14 @@ public class InventoryDao {
 
     public List<CheckInSummary> getCurrentOccupiedRooms() throws SQLException {
         String query = "select * from check_in c join guest g on " +
-                "c.phone = g.phone where c.check_out_time is null order by c.check_in_time";
+                "c.phone = g.phone where c.check_out_time is null order by c.id";
         PreparedStatement pst = connection.prepareStatement(query);
         return getCheckInSummaries(pst);
     }
 
     public List<CheckInSummary> getCheckIns(String startDate, String endDate) throws SQLException {
         String query = "select * from check_in c join guest g on c.phone = g.phone where " +
-                "c.check_in_time >= ? and c.check_in_time <= ? order by c.check_in_time";
+                "c.check_in_time >= ? and c.check_in_time <= ? order by c.id";
         PreparedStatement pst = connection.prepareStatement(query);
         pst.setString(1, startDate);
         pst.setString(2, endDate);
