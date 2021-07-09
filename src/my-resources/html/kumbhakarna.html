@@ -25,7 +25,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <style type="text/css">
          .btn {
-         padding: 30px 5px;
+         padding: 10px 5px;
          font-size: 24px;
          }
          .row{
@@ -274,7 +274,7 @@
     }
 
       function makeTableHTML(data) {
-            var result =         "<br/> <hr> <br/><table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:90%;font-size:19px;\"> <thead>\n" +
+            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;font-size:17px;\"> <thead>\n" +
                 "    <tr>\n" +
                 "      <th scope=\"col\">S.No</th>\n" +
                 "      <th scope=\"col\">Name</th>\n" +
@@ -331,11 +331,10 @@
        }
 </script>
 <div class="container">
+    </br>
     <div class="row">
 
-        <br/>
-        <br/>
-        <br/>
+        <h4> Deluxe</h4>
         <div class="col-xs-4">
             <button type="button" id="101" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('101');">101</button>
         </div>
@@ -350,7 +349,7 @@
 
 
     <div class="row">
-
+        <h4> Executive</h4>
         <div class="col-xs-4">
             <button type="button" id="102" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('102');">102</button>
         </div>
@@ -363,7 +362,7 @@
     </div>
     </br>
     <div class="row">
-
+        <h4> Superior</h4>
         <div class="col-xs-4">
         </div>
         <div class="col-xs-4">
@@ -477,7 +476,7 @@
     </div>
 
     <div class="row">
-
+        <h4> Bussiness Class</h4>
         <div class="col-xs-4">
             <button type="button" id="104" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('104');">104</button>
         </div>
@@ -490,7 +489,7 @@
     </div>
     <br/>
     <div class="row">
-
+        <h4> Suite</h4>
         <div class="col-xs-4">
             <button type="button" id="103" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('103');">103</button>
         </div>
@@ -500,20 +499,21 @@
         <div class="col-xs-4">
         </div>
     </div>
-    <br/><br/>
+    <br/>
     <div class="row">
-        <div class="col-xs-4" style="text-align:left;">
+        <div class="col-xs-4" style="text-align:left;font-size:18px;">
             <button type="button" style = "padding: 5px 5px;" class="btn btn-success"></button> &nbsp Available
-            <br/>
-            <button type="button" style = "padding: 5px 5px;" class="btn btn-danger"></button> &nbsp Occupied
-            <br/>
-            <button type="button" style = "padding: 5px 5px;" class="btn btn-primary"></button> &nbsp Checkout
+        </div>
+        <div class="col-xs-4" style="text-align:left;font-size:18px;">
+            <button type="button" style = "padding: 5px 5px;font-size:14px;" class="btn btn-danger"></button> &nbsp Occupied
+        </div>
+        <div class="col-xs-4" style="text-align:left;font-size:18px;">
+            <button type="button" style = "padding: 5px 5px;font-size:14px;" class="btn btn-primary"></button> &nbsp Checkout
         </div>
     </div>
+</div>
+<div class="row" id="summaryContent">
 
-    <div class="row" id="summaryContent">
-
-    </div>
 </div>
 </body>
 </html>
