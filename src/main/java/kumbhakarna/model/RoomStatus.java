@@ -11,4 +11,6 @@ public enum  RoomStatus {
     AVAILABLE, //GREEN
     CHECKOUT,  // GREY
     OCCUPIED, // RED
+    MAINTENANCE,
+    ROOMFIXED
 }

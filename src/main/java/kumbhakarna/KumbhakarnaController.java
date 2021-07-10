@@ -6,11 +6,13 @@ import com.google.gson.JsonObject;
 import kumbhakarna.Response.GetHotelStatusResponse;
 import kumbhakarna.Response.SummaryResponse;
 import kumbhakarna.dao.InventoryDao;
+import kumbhakarna.model.Booking;
 import kumbhakarna.model.RoomData;
 import kumbhakarna.model.RoomInfoEntry;
 import kumbhakarna.model.RoomStatus;
 import kumbhakarna.requests.SummaryRequest;
 import kumbhakarna.requests.UpdateRoomStatusRequest;
+import kumbhakarna.requests.UpsertBooking;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -83,8 +86,14 @@ public class KumbhakarnaController {
         Integer days = updateRoomStatusRequest.getDays();
         Integer roomBill = updateRoomStatusRequest.getRoomBill();
         Integer foodBill = updateRoomStatusRequest.getFoodBill();
-
+        String checkOutTime = updateRoomStatusRequest.getCheckOutTime();
         switch (stateChange) {
+            case "AVAILABLE#MAINTENANCE":
+                inventoryDao.updateRoomStatus(room, RoomStatus.MAINTENANCE, null);
+                break;
+            case "MAINTENANCE#ROOMFIXED":
+                inventoryDao.updateRoomStatus(room, RoomStatus.AVAILABLE, null);
+                break;
             case "AVAILABLE#OCCUPIED":
                 String checkInId = inventoryDao
                         .checkIn(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime, remark);
@@ -103,7 +112,7 @@ public class KumbhakarnaController {
             case "CHECKOUT#CHECKOUT":
                 String linkedCheckIn = roomInfoEntry.getLinkedCheckIn();
                 inventoryDao.updateCheckin(linkedCheckIn, phone, guestCount, extraBed, plan, tariff, checkInTime,
-                        null, days, roomBill, foodBill, remark);
+                        checkOutTime, days, roomBill, foodBill, remark);
                 break;
             case "OCCUPIED#CHECKOUT":
                 inventoryDao.checkout(phone, name, room, guestCount, extraBed, plan, tariff, checkInTime,
@@ -141,6 +150,17 @@ public class KumbhakarnaController {
         return new SummaryResponse(inventoryDao.getCheckIns(startDate, endDate));
     }
 
+    @RequestMapping(value = "/bookings", method = RequestMethod.GET, produces = "application/json")
+    public List<Booking> getBookings()
+            throws SQLException {
+        return inventoryDao.getBookings();
+    }
+
+    @RequestMapping(value = "/upsert-booking", method = RequestMethod.POST, produces = "application/json")
+    public String updateRoomStatus(@RequestBody UpsertBooking upsertBooking) throws IOException {
+        inventoryDao.upsertBooking(upsertBooking);
+        return "{}";
+    }
     private void sendMessageCheckout(String checkIn,
                                      String room,
                                      String name,
@@ -153,7 +173,7 @@ public class KumbhakarnaController {
                                      Integer roomBill,
                                      Integer foodBill,
                                      String remark) throws IOException {
-        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "htt3ps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml", "<flockml>" +
                 "<b>" + checkIn + "</b><br/>" +
@@ -199,7 +219,7 @@ public class KumbhakarnaController {
                              Integer tariff,
                              Boolean extraBed,
                              String remark) throws IOException {
-        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "htt3ps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml", "<flockml>" +
                 "<b>" + checkIn + "</b><br/>" +

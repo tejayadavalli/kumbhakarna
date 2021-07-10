@@ -28,6 +28,8 @@ public class UpdateRoomStatusRequest implements Serializable {
     private Integer tariff;
     @JsonProperty(value = "checkInTime")
     private String checkInTime;
+    @JsonProperty(value = "checkOutTime")
+    private String checkOutTime;
     @JsonProperty(value = "remark")
     private String remark;
     @JsonProperty(value = "days")

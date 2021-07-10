@@ -6,7 +6,7 @@ public class Utils {
     private static JsonMapper mapper = new JsonMapper();
 
     public static String convertToDBDate(String date){
-        if(date == null) return null;
+        if(date == null || date.trim().equals("")) return null;
         String[] parts = date.split(" ");
         String[] dateParts = parts[0].split("/");
         StringBuilder reverseDateString = new StringBuilder();

@@ -56,6 +56,7 @@
 <body>
 <script type="text/javascript">
            var submitedData = {};
+           var bookingsData = [];
            var roomsData = {};
            function refreshData(){
                $.ajax({
@@ -78,14 +79,19 @@
                 $('#datepicker1').datetimepicker({
                     format: 'DD/MM/YYYY LT'
                 });
+                $('#datepicker2').datetimepicker({
+                    format: 'DD/MM/YYYY LT'
+                });
                 refreshData();
+                fetchBookings();
            });
 
            function updateData(){
               for(var key in roomsData["roomsData"]){
                 switch(roomsData["roomsData"][key]["roomStatus"]) {
                      case "AVAILABLE":
-                        $("#" + key).removeClass("btn-primary").removeClass("btn-danger")
+                        $("#" + key).removeClass("btn-warning")
+                        .removeClass("btn-primary").removeClass("btn-danger")
                         .addClass("btn-success");
                         break;
                      case "OCCUPIED":
@@ -95,6 +101,9 @@
                      case "CHECKOUT":
                         $("#" + key).removeClass("btn-danger").removeClass("btn-success")
                         .addClass("btn-primary");
+                        break;
+                     case "MAINTENANCE":
+                        $("#" + key).removeClass("btn-success").addClass("btn-warning");
                         break;
                      default:
                         break;
@@ -108,10 +117,115 @@
                 !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
            }
 
+           function submitBookingData(id){
+                var postData = {};
+                postData['id'] = id;
+                postData['name'] = $("#b-name").val().trim();
+                postData['phone'] = $("#b-phone").val().trim();
+                postData['deluxeRooms'] = parseInt($("#b-deluxe-rooms").val());
+                postData['deluxeTariff'] = parseInt($("#b-deluxe-tariff").val());
+                postData['executiveRooms'] = parseInt($("#b-executive-rooms").val());
+                postData['executiveTariff'] = parseInt($("#b-executive-tariff").val());
+                postData['superiorRooms'] = parseInt($("#b-superior-rooms").val());
+                postData['superiorTariff'] = parseInt($("#b-superior-tariff").val());
+                postData['businessRooms'] = parseInt($("#b-business-rooms").val());
+                postData['businessTariff'] = parseInt($("#b-business-tariff").val());
+                postData['suiteRooms'] = parseInt($("#b-suite-rooms").val());
+                postData['suiteTariff'] = parseInt($("#b-suite-tariff").val());
+                postData['days'] = parseInt($("#b-days").val());
+                postData['plan'] = ($("#b-plan").prop('checked')) ? 'CP' : 'EP';
+                postData['extraBed'] = $("#b-extraBed").prop('checked');
+                postData['mode'] = $("#b-mode").val();
+                postData['checkInTime'] = $("#datepicker2").val();
+                postData['advance'] = parseInt($("#b-advance").val());
+                postData['remark'] = $("#b-remark").val();
+
+              if(postData['name'].length == 0){
+                alert("Provide Valid Name");
+                return;
+              }
+
+              if(postData['phone'].length != 10){
+                alert("Provide Valid Phone Number");
+                return;
+              }
+              var roomCount = 0;
+              if(!isNaN(postData['deluxeRooms']) && isNaN(postData['deluxeTariff'])){
+                alert("Provide Valid Tariff for Deluxe Rooms");
+                return;
+              }
+
+              if(!isNaN(postData['executiveRooms']) && isNaN(postData['executiveTariff'])){
+                alert("Provide Valid Tariff for Executive Rooms");
+                return;
+              }
+
+              if(!isNaN(postData['superiorRooms']) && isNaN(postData['superiorTariff'])){
+                alert("Provide Valid Tariff for Superior Rooms");
+                return;
+              }
+
+              if(!isNaN(postData['businessRooms']) && isNaN(postData['businessTariff'])){
+                alert("Provide Valid Tariff for Business Class Rooms");
+                return;
+              }
+
+              if(!isNaN(postData['suiteRooms']) && isNaN(postData['suiteTariff'])){
+                alert("Provide Valid Tariff for Suite Rooms");
+                return;
+              }
+
+              if(isNaN(postData['executiveRooms']) && isNaN(postData['deluxeRooms']) && isNaN(postData['superiorRooms']) && isNaN(postData['suiteRooms']) && isNaN(postData['businessRooms'])){
+                alert("Provide atlease 1 room");
+                return;
+              }
+
+            if(isNaN(postData['days'])){
+                alert("Provide Valid Stay Duration");
+                return;
+             }
+
+            if(postData['mode'] === '-'){
+                alert("Provide Valid Mode");
+                return;
+             }
+
+            if(postData['checkInTime'].trim().length == 0){
+                alert("Provide Valid Check-In");
+                return;
+            }
+
+            if(isNaN(postData['advance'])){
+                alert("Provide Valid advance");
+                return;
+             }
+
+            $.ajax({
+               url: './upsert-booking',
+               type: 'post',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+
+                   $('#cancel-btn').click();
+                   $(".modal-backdrop").removeClass("modal-backdrop");
+                   fetchBookings();
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               },
+               data: JSON.stringify(postData)
+           });
+
+           }
+
            function submitData(room, action){
               var postData = {};
               postData['room'] = room.trim();
               postData['roomStatus'] = action.toUpperCase();;
+              if(postData['roomStatus'] === 'MAINTENANCE' || postData['roomStatus'] === 'ROOMFIXED'){
+
+              } else{
               postData['name'] = $("#name").val().trim();
               postData['phone'] = $("#phone").val().trim();
               postData['extraBed'] = $("#extraBed").prop('checked');
@@ -120,7 +234,7 @@
               postData['tariff'] = parseInt($("#tariff").val());
               postData['checkInTime'] = $("#datepicker1").val();
               postData['guestCount'] = parseInt($("#guest_count").val());
-
+              postData['checkOutTime'] =$("#checkoutTime").html().trim();
               if(postData['name'].length == 0){
                 alert("Provide Valid Name");
                 return;
@@ -176,7 +290,7 @@
                 }
                 postData['foodBill'] = parseInt($("#food-bill").val());
               }
-
+             }
               $.ajax({
                url: './update-status',
                type: 'post',
@@ -195,6 +309,32 @@
            });
 
            }
+
+           function updateBookingModal(id){
+                var baseString = '<button type="button" id = "cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>';
+
+                $("#b-modal-footer").html(baseString + addBooking());
+                $("#b-name").val(null)
+                $("#b-phone").val(null);
+                $("#b-deluxe-rooms").val('-');
+                $("#b-deluxe-tariff").val(null);
+                $("#b-executive-rooms").val('-');
+                $("#b-executive-tariff").val(null);
+                $("#b-superior-rooms").val('-');
+                $("#b-superior-tariff").val(null);
+                $("#b-business-rooms").val(null);
+                $("#b-business-tariff").val(null);
+                $("#b-suite-rooms").val();
+                $("#b-suite-tariff").val(null);
+                $("#b-days").val(null);
+                $("#b-plan").prop('checked', false);
+                $("#b-extraBed").prop('checked', false);
+                $("#b-mode").val('-');
+                $("#datepicker2").val(null);
+                $("#b-advance").val(null);
+                $("#b-remark").val(null);
+           }
+
            function updateModal(room){
                 room = room.trim();
                 data = roomsData["roomsData"][room];
@@ -233,20 +373,31 @@
                 var baseString = '<button type="button" id = "cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>';
                 switch(data["roomStatus"]){
                      case "AVAILABLE":
-                        baseString = baseString + '&nbsp' + checkInButton(room);
+                        baseString = baseString + '&nbsp' + maintenanceButton(room) + '&nbsp' + checkInButton(room);
                         $("#modal-footer").html(baseString);
                         $('#checkout-info').css('display', 'none');
+                        $('#r-modal-body').css('display', 'block');
+                        $('#checkoutHeading').html('<span id="checkoutTime"></span>');
                         break;
                      case "OCCUPIED":
                         baseString = baseString + '&nbsp' + updateButtonOccupied(room) + '&nbsp' + checkoutButton(room);
                         $("#modal-footer").html(baseString);
                         $('#checkout-info').css('display', 'block');
+                        $('#r-modal-body').css('display', 'block');
+                        $('#checkoutHeading').html('<span id="checkoutTime"></span>');
                         break;
                      case "CHECKOUT":
                         baseString = baseString + '&nbsp' + updateButtonCheckout(room) + '&nbsp' + roomCleanedButton(room);
                         $("#modal-footer").html(baseString);
+                        $('#r-modal-body').css('display', 'block');
                         $('#checkout-info').css('display', 'block');
+                        $('#checkoutHeading').html('Checkout Time: <span id="checkoutTime" style="font-weight:normal;"></span>');
+                        $('#checkoutTime').html(data["checkOutTime"]);
                         break;
+                     case "MAINTENANCE":
+                        $('#r-modal-body').css('display', 'none');
+                        baseString = baseString + '&nbsp' + roomFixed(room);
+                        $("#modal-footer").html(baseString);
                      default:
                         break;
              }
@@ -271,7 +422,24 @@
                },
                data: JSON.stringify(data)
            });
-    }
+     }
+
+    function fetchBookings(){
+
+
+       $.ajax({
+               url: '/bookings',
+               type: 'get',
+               success: function(data){
+                  bookingsData = data;
+                  $("#booking-table").html(makeBookingTableHTML(data));
+
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               }
+           });
+     }
 
       function makeTableHTML(data) {
             var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;font-size:17px;\"> <thead>\n" +
@@ -310,6 +478,94 @@
             return result;
          }
 
+      function makeBookingTableHTML(data) {
+            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;font-size:17px;\"> <thead>\n" +
+                "    <tr>\n" +
+                "      <th scope=\"col\">S.No</th>\n" +
+                "      <th scope=\"col\">Name</th>\n" +
+                "      <th scope=\"col\">Phone</th>\n" +
+                "      <th scope=\"col\">Rooms</th>\n" +
+                "      <th scope=\"col\">Days</th>\n" +
+                "      <th scope=\"col\">Plan</th>\n" +
+                "      <th scope=\"col\">Extra Bed</th>\n" +
+                "      <th scope=\"col\">Advance</th>\n" +
+                "      <th scope=\"col\">Check-In</th>\n" +
+                "      <th scope=\"col\">Mode</th>\n" +
+                "      <th scope=\"col\">Remark</th>\n" +
+                "    </tr>\n" +
+                "  </thead>\n" +
+                "  <tbody>";
+
+            for(var i=0;i<data.length; i++) {
+                var booking = data[i];
+                result += "<tr>";
+                result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["name"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["phone"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+ getRoomsString(booking) +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["days"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["plan"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+(booking["extraBed"] ? 'Yes' : 'No') +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["advance"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["checkInTime"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["mode"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+booking["remark"] +"</td>";
+                result += "</tr>";
+                }
+                result += "</tr>";
+
+            result += "</tbody></table>";
+            return result;
+         }
+
+       function getRoomsString(booking){
+            var baseString = "<table>"
+            if(booking["deluxeRooms"] != null && booking["deluxeRooms"] != 0){
+                var row = "<tr>"
+                row = row + "<td>" + "Deluxe: &nbsp" + "</td>";
+                row = row + "<td> " + booking["deluxeRooms"] + "</td>";
+                row = row + "<td> &nbsp Price: " + booking["deluxeTariff"] + "</td>";
+                row = row + "</tr>"
+                baseString = baseString + row;
+            }
+            if(booking["executiveRooms"] != null && booking["executiveRooms"] != 0){
+                var row = "<tr>"
+                row = row + "<td>" + "Executive: &nbsp" + "</td>";
+                row = row + "<td> " + booking["executiveRooms"] + "</td>";
+                row = row + "<td> &nbsp Price: " + booking["executiveTariff"] + "</td>";
+                row = row + "</tr>"
+                baseString = baseString + row;
+            }
+
+            if(booking["superiorRooms"] != null && booking["superiorRooms"] != 0){
+                var row = "<tr>"
+                row = row + "<td>" + "Superior: &nbsp" + "</td>";
+                row = row + "<td> " + booking["superiorRooms"] + "</td>";
+                row = row + "<td> &nbsp Price: " + booking["superiorTariff"] + "</td>";
+                row = row + "</tr>"
+                baseString = baseString + row;
+            }
+
+            if(booking["businessRooms"] != null && booking["businessRooms"] != 0){
+                var row = "<tr>"
+                row = row + "<td>" + "Business: &nbsp" + "</td>";
+                row = row + "<td> " + booking["businessRooms"] + "</td>";
+                row = row + "<td> &nbsp Price: " + booking["businessTariff"] + "</td>";
+                row = row + "</tr>"
+                baseString = baseString + row;
+            }
+
+            if(booking["suiteRooms"] != null && booking["suiteRooms"] != 0){
+                var row = "<tr>"
+                row = row + "<td>" + "Suite: &nbsp" + "</td>";
+                row = row + "<td> " + booking["suiteRooms"] + "</td>";
+                row = row + "<td> &nbsp Price: " + booking["suiteTariff"] + "</td>";
+                row = row + "</tr>"
+                baseString = baseString + row;
+            }
+            baseString = baseString + "</table>";
+            return baseString;
+       }
        function checkoutButton(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+room + '\',\'CHECKOUT\')">Check Out</button>';
        }
@@ -329,6 +585,20 @@
        function roomCleanedButton(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'AVAILABLE\''+ ')">Cleaned</button>';
        }
+
+
+       function addBooking(){
+        return '<button type="button" class="btn btn-primary"  onclick="submitBookingData(null)">Add Booking</button>';
+       }
+
+       function maintenanceButton(room){
+        return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'MAINTENANCE\''+ ')">Maintenance</button>';
+       }
+
+       function roomFixed(room){
+        return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'ROOMFIXED\''+ ')">Room Fixed</button>';
+       }
+
 </script>
 <div class="container">
     </br>
@@ -380,9 +650,10 @@
                     <button style="font-size:26px;" type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
-                    <h2 class="modal-title" id="roomNumber" style="text-align:center">101</h2>
+                    <h2 class="modal-title" id="roomNumber" style="text-align:center"></h2>
+                    <h4 class="modal-title" id="checkoutHeading" style="text-align:center"></h4>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" id="r-modal-body">
                     <form>
                         <div class="form-group">
 
@@ -474,6 +745,178 @@
             </div>
         </div>
     </div>
+    <div class="modal" id="bookingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button style="font-size:26px;" type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h2 class="modal-title" style="text-align:center">Booking</h2>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-6">
+                                <label for="Playo" class="col-form-label"  style="font-size: 17px;">Name </label>
+                                <input autocomplete="off" type="text"  style="font-size: 17px;text-align:center" class="form-control" id="b-name" >
+                            </div>
+                            <div class="col-xs-6">
+                                <label for="Cash" class="col-form-label"  style="font-size: 17px;">Phone </label>
+                                <input autocomplete="off" type="text"  style="font-size: 17px;text-align:center" class="form-control" id="b-phone" >
+                            </div>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="row">
+                            <table class = "table" style="font-size: 17px;">
+                                <thead>
+                                <tr>
+                                    <th style = 'text-align:center;'>Type</th>
+                                    <th style = 'text-align:center;'>Rooms</th>
+                                    <th style = 'text-align:center;'>Tariff</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td style = 'text-align:center;'>Deluxe</td>
+                                    <td>
+                                        <select id = "b-deluxe-rooms" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                            <option selected>-</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input id="b-deluxe-tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                                    </td>
+
+                                </tr>
+                                <tr>
+                                    <td style = 'text-align:center;'>Executive</td>
+                                    <td>
+                                        <select id = "b-executive-rooms" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                            <option selected>-</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        <input id="b-executive-tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                                    </td>
+
+                                </tr>
+                                <tr>
+                                    <td style = 'text-align:center;'>Superior</td>
+                                    <td>
+                                        <select id = "b-superior-rooms" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                            <option selected>-</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        <input id="b-superior-tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                                    </td>
+
+                                </tr>
+                                <tr>
+                                    <td style = 'text-align:center;'>Business Class</td>
+                                    <td>
+                                        <select id = "b-business-rooms" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                            <option selected>-</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        <input id="b-business-tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                                    </td>
+
+                                </tr>
+                                <tr>
+                                    <td style = 'text-align:center;'>Suite</td>
+                                    <td>
+                                        <select id = "b-suite-rooms" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                            <option selected>-</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </td>
+
+                                    <td>
+                                        <input id="b-suite-tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                                    </td>
+                                
+                                </tr>
+
+                                </tbody>
+
+                            </table>
+                        </div>
+                        <div class="row">
+
+
+                            <div class="col-xs-4">
+                                <label for="Playo" class="col-form-label"  style="font-size: 17px;">Days : &nbsp</label>
+                                <input id="b-days" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                            </div>
+                            <div class="col-xs-4" id="b-plan-div">
+                                <label for="Cash" class="col-form-label"  style="font-size: 17px;">Plan : &nbsp</label>
+
+                                <input id="b-plan" style="padding: 5px 10px;font-size: 14px;" type="checkbox" data-toggle="toggle" data-on="CP" data-off="EP" data-onstyle="success" data-offstyle="info" >
+
+                            </div>
+                            <div class="col-xs-4" id="b-extraBed-div">
+                                <label for="UPI" class="col-form-label"  style="font-size: 17px;">Extra Bed : &nbsp</label>
+                                <input id="b-extraBed" style="padding: 5px 10px;font-size: 14px;" type="checkbox" data-toggle="toggle" data-on="YES" data-off="NO" data-onstyle="success" >
+                            </div>
+                        </div>
+                        <br/><br/>
+                        <div class="row">
+                            <div class="col-xs-3" style="text-align:center;font-size: 17px;">
+                                <label for="Playo" class="col-form-label"  style="font-size: 17px;">Mode</label>
+                            <br/>
+                                <select id = "b-mode" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                                    <option selected>-</option>
+                                    <option value="Phone">Phone</option>
+                                    <option value="Walk-In">Walk-In</option>
+                                    <option value="InGoMMT">InGoMMT</option>
+                                </select>
+                            </div>
+                            <div class="col-xs-6" style="text-align:center;font-size: 17px;">
+                                <label for="datepicker2">Check In <br></label>
+                                <input id="datepicker2" autocomplete="off">
+                            </div>
+
+                            <div class="col-xs-3" style="text-align:center;font-size: 17px;">
+                                <label>Advance</label>
+                                <input id="b-advance" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
+                            </div>
+                        </div>
+                        <br/>
+                        <br/>
+                        <div class="form-group">
+                            <label for="message-text" class="col-form-label" style="font-size: 17px;"> Remark:</label>
+                            <textarea class="form-control" id="b-remark" style="font-size: 17px;"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" id="b-modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="row">
         <h4> Bussiness Class</h4>
@@ -497,23 +940,39 @@
             <button type="button" id="203" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('203');">203</button>
         </div>
         <div class="col-xs-4">
+            <button type="button" id="303" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('303');">303</button>
         </div>
     </div>
     <br/>
-    <div class="row">
-        <div class="col-xs-4" style="text-align:left;font-size:18px;">
-            <button type="button" style = "padding: 5px 5px;" class="btn btn-success"></button> &nbsp Available
-        </div>
-        <div class="col-xs-4" style="text-align:left;font-size:18px;">
-            <button type="button" style = "padding: 5px 5px;font-size:14px;" class="btn btn-danger"></button> &nbsp Occupied
-        </div>
-        <div class="col-xs-4" style="text-align:left;font-size:18px;">
-            <button type="button" style = "padding: 5px 5px;font-size:14px;" class="btn btn-primary"></button> &nbsp Checkout
-        </div>
+    <div class="row" style="font-size:15px;">
+            <button type="button" style = "padding: 8px 8px;" class="btn btn-success"></button> &nbsp Available &nbsp&nbsp
+            <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-danger"></button> &nbsp Occupied &nbsp&nbsp
+            <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-primary"></button> &nbsp Checkout &nbsp&nbsp
+            <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-warning"></button> &nbsp Maintenance &nbsp&nbsp
     </div>
 </div>
 <div class="row" id="summaryContent">
 
 </div>
+
+</br>
+</br>
+</br>
+<div class="container">
+
+    <div class="row">
+        <div class="col-xs-2"></div>
+        <div class="col-xs-6" >
+            <b style = "font-size: 26px;">Advance Bookings</b>
+        </div>
+        <div class="col-xs-2">
+            <button type="button" onclick="updateBookingModal('304');" data-toggle="modal" data-target="#bookingModal" class="btn btn-warning btn-block border-dark" style="font-size:18px">Add Booking</button>
+        </div>
+    </div>
+</div>
+<div class="row" id="bookingsContent">
+    <div id ='booking-table'></div>
+</div>
+
 </body>
 </html>
