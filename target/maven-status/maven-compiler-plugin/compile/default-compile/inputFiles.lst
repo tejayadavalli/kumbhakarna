@@ -3,6 +3,7 @@
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/model/RoomStatus.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/utils/Utils.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/Response/GetHotelStatusResponse.java
+/Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/model/Booking.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/requests/SummaryRequest.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/model/RoomInfoEntry.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/Response/SummaryResponse.java
@@ -11,3 +12,4 @@
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/model/RoomStatusEntry.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/model/CheckInSummary.java
 /Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/KumbhakarnaController.java
+/Users/krishnatejay/repo/kumbhakarna/src/main/java/kumbhakarna/requests/UpsertBooking.java

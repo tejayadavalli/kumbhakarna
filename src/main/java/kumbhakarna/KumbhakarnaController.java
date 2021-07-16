@@ -173,7 +173,7 @@ public class KumbhakarnaController {
                                      Integer roomBill,
                                      Integer foodBill,
                                      String remark) throws IOException {
-        String query = "htt3ps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml", "<flockml>" +
                 "<b>" + checkIn + "</b><br/>" +
@@ -219,7 +219,7 @@ public class KumbhakarnaController {
                              Integer tariff,
                              Boolean extraBed,
                              String remark) throws IOException {
-        String query = "htt3ps://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
+        String query = "https://api.flock.com/hooks/sendMessage/d3f4ca07-847f-4b01-a5c3-ff58d6de79cf";
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flockml", "<flockml>" +
                 "<b>" + checkIn + "</b><br/>" +

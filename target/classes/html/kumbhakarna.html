@@ -442,15 +442,15 @@
      }
 
       function makeTableHTML(data) {
-            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;font-size:17px;\"> <thead>\n" +
+            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:90%;font-size:17px;\"> <thead>\n" +
                 "    <tr>\n" +
                 "      <th scope=\"col\">S.No</th>\n" +
                 "      <th scope=\"col\">Name</th>\n" +
                 "      <th scope=\"col\">Plan</th>\n" +
+                "      <th scope=\"col\">Guest Count</th>\n" +
                 "      <th scope=\"col\">Tariff</th>\n" +
                 "      <th scope=\"col\">Room</th>\n" +
                 "      <th scope=\"col\">Check-In</th>\n" +
-                "      <th scope=\"col\">Guest Count</th>\n" +
                 "      <th scope=\"col\">Extra Bed</th>\n" +
                 "      <th scope=\"col\">Remark</th>\n" +
                 "    </tr>\n" +
@@ -464,12 +464,12 @@
                 result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["name"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["plan"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["tariff"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["room"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["checkInTime"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+(checkInSummaries[i]["extraBed"] ? 'Yes' : 'No') +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["remark"] +"</td>";
+                result += "<td style =\"word-break:break-all;width:30%;\">"+checkInSummaries[i]["remark"] +"</td>";
                 result += "</tr>";
                 }
                 result += "</tr>";
@@ -479,7 +479,7 @@
          }
 
       function makeBookingTableHTML(data) {
-            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:70%;font-size:17px;\"> <thead>\n" +
+            var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:90%;font-size:17px;\"> <thead>\n" +
                 "    <tr>\n" +
                 "      <th scope=\"col\">S.No</th>\n" +
                 "      <th scope=\"col\">Name</th>\n" +
@@ -509,7 +509,7 @@
                 result += "<td style =\"word-break:break-all;\">"+booking["advance"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+booking["checkInTime"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+booking["mode"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+booking["remark"] +"</td>";
+                result += "<td style =\"word-break:break-all;width:30%;\">"+booking["remark"] +"</td>";
                 result += "</tr>";
                 }
                 result += "</tr>";
