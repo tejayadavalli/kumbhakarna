@@ -9,6 +9,9 @@ Create table guest(
     name text
 );
 
+Alter table guest add column check_in_sms int;
+Alter table guest add column check_out_sms int;
+
 Create Table check_in(
     id text PRIMARY KEY,
     phone text,

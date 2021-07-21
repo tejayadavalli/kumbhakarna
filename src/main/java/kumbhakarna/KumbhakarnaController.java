@@ -6,13 +6,11 @@ import com.google.gson.JsonObject;
 import kumbhakarna.Response.GetHotelStatusResponse;
 import kumbhakarna.Response.SummaryResponse;
 import kumbhakarna.dao.InventoryDao;
-import kumbhakarna.model.Booking;
-import kumbhakarna.model.RoomData;
-import kumbhakarna.model.RoomInfoEntry;
-import kumbhakarna.model.RoomStatus;
+import kumbhakarna.model.*;
 import kumbhakarna.requests.SummaryRequest;
 import kumbhakarna.requests.UpdateRoomStatusRequest;
 import kumbhakarna.requests.UpsertBooking;
+import kumbhakarna.utils.TextLocalSmsSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -100,8 +98,16 @@ public class KumbhakarnaController {
                 completedFuture(null)
                         .thenRunAsync(() -> {
                             try {
+                                Guest guestDetails = inventoryDao.getGuestDetails(phone);
+                                long currentTime = System.currentTimeMillis();
+                                Long checkInSmsTime = guestDetails.getCheckInSmsTime();
+                                if(checkInSmsTime == null || currentTime - checkInSmsTime > 1000*60*60*24*2){
+                                    TextLocalSmsSender.sendSms("CheckIn", phone);
+                                    inventoryDao.updateGuestCheckInSms(phone, currentTime);
+                                }
                                 sendMessage("Check-In", room, name, phone,
                                         guestCount, plan, tariff, extraBed, remark);
+
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -120,6 +126,14 @@ public class KumbhakarnaController {
                 completedFuture(null)
                         .thenRunAsync(() -> {
                             try {
+                                Guest guestDetails = inventoryDao.getGuestDetails(phone);
+                                long currentTime = System.currentTimeMillis();
+                                Long checkOutSmsTime = guestDetails.getCheckOutSmsTime();
+                                Long checkInSmsTime = guestDetails.getCheckInSmsTime();
+                                if((currentTime - checkInSmsTime  > 1000*60*60*3) && (checkOutSmsTime == null || currentTime - checkOutSmsTime > 1000*60*60*24*30)){
+                                    String checkOut = TextLocalSmsSender.sendSms("CheckOut", phone);
+                                    inventoryDao.updateGuestCheckOutSms(phone, currentTime);
+                                }
                                 sendMessageCheckout("Check-Out", room, name, phone,
                                         guestCount, plan, tariff, extraBed, days, roomBill, foodBill, remark);
                             } catch (IOException e) {

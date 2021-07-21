@@ -97,6 +97,24 @@ public class InventoryDao {
         return null;
     }
 
+
+    public Guest getGuestDetails(String phoneNumber){
+        try {
+            PreparedStatement st = connection.prepareStatement("SELECT * FROM guest WHERE phone = ?");
+            st.setString(1, phoneNumber);
+            ResultSet rs = st.executeQuery();
+            rs.next();
+            String name = rs.getString(2);
+            Long checkInSmsTime = (Long) rs.getObject(3);
+            Long checkOutSmsTime = (Long) rs.getObject(4);
+            return new Guest(phoneNumber, name, checkInSmsTime, checkOutSmsTime);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public String checkIn(String phone,
                           String name,
                           String room,
@@ -381,6 +399,30 @@ public class InventoryDao {
             pst.setObject(37, Utils.convertToDBDate(u.getCheckInTime()));
             pst.setObject(38, u.getAdvance());
             pst.setObject(39, u.getRemark());
+            pst.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateGuestCheckInSms(String phone, long currentTime) {
+        String query = "update guest set check_in_sms = ? where phone = ?";
+        try {
+            PreparedStatement pst = connection.prepareStatement(query);
+            pst.setObject(1, currentTime);
+            pst.setObject(2, phone);
+            pst.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateGuestCheckOutSms(String phone, long currentTime) {
+        String query = "update guest set check_out_sms = ? where phone = ?";
+        try {
+            PreparedStatement pst = connection.prepareStatement(query);
+            pst.setObject(1, currentTime);
+            pst.setObject(2, phone);
             pst.execute();
         } catch (SQLException e) {
             e.printStackTrace();
