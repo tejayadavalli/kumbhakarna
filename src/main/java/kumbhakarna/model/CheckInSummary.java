@@ -9,6 +9,8 @@ import lombok.Getter;
 @Getter
 public class CheckInSummary {
     private static final Gson gson = new Gson();
+    @JsonProperty(value ="id")
+    private final String id;
     @JsonProperty(value ="name")
     private final String name;
     @JsonProperty(value ="room")
@@ -31,8 +33,28 @@ public class CheckInSummary {
     private final Integer roomBill;
     @JsonProperty(value ="foodBill")
     private final Integer foodBill;
+    @JsonProperty(value ="bottles")
+    private final Integer bottles;
+    @JsonProperty(value ="combos")
+    private final Integer combos;
+    @JsonProperty(value ="cooldrinks")
+    private final Integer cooldrinks;
+    @JsonProperty(value ="cash")
+    private final Integer cash;
+    @JsonProperty(value ="upi")
+    private final Integer upi;
+    @JsonProperty(value ="card")
+    private final Integer card;
+    @JsonProperty(value ="ingommt")
+    private final Integer ingommt;
     @JsonProperty(value ="remark")
     private final String remark;
+    @JsonProperty(value ="gstNumber")
+    private final String gstNumber;
+    @JsonProperty(value ="s3BillKey")
+    private final String s3BillKey;
+    @JsonProperty(value ="isDeleted")
+    private final Boolean isDeleted;
 
     @Override
     public String toString() {

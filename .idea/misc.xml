@@ -5,6 +5,10 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/../graphql-with-spring-boot/pom.xml" />
+        <option value="$PROJECT_DIR$/../graphql/pom.xml" />
+        <option value="$PROJECT_DIR$/../smaash/pom.xml" />
+        <option value="$PROJECT_DIR$/../umspUserManagementService/pom.xml" />
       </list>
     </option>
   </component>

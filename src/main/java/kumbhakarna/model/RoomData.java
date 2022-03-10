@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Map;
+
 @AllArgsConstructor
 @Getter
 @Builder
@@ -13,6 +15,8 @@ public class RoomData {
     private static final Gson gson = new Gson();
     @JsonProperty(value ="roomStatus")
     private final RoomStatus roomStatus;
+    @JsonProperty(value = "meta")
+    private final Map<String, String> meta;
     @JsonProperty(value ="phone")
     private final String phone;
     @JsonProperty(value ="name")
@@ -37,6 +41,20 @@ public class RoomData {
     private final Integer roomBill;
     @JsonProperty(value ="foodBill")
     private final Integer foodBill;
+    @JsonProperty(value ="bottles")
+    private final Integer bottles;
+    @JsonProperty(value ="combos")
+    private final Integer combos;
+    @JsonProperty(value ="cooldrinks")
+    private final Integer cooldrinks;
+    @JsonProperty(value ="cash")
+    private final Integer cash;
+    @JsonProperty(value ="upi")
+    private final Integer upi;
+    @JsonProperty(value ="card")
+    private final Integer card;
+    @JsonProperty(value ="ingommt")
+    private final Integer ingommt;
     @JsonProperty(value ="remark")
     private final String remark;
 

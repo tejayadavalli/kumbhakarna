@@ -50,14 +50,57 @@
             padding: 5px 14px;
             font-size: 14px;
          }
+         .btn-blocked{
+            background-color: #13cbd5;
+            border-color: #04dee9;
+            color: white;
+         }
+         .btn-blocked:hover{
+            background-color: #0cb9c2;
+            border-color: #0cb9c2;
+            color: white;
+         }
+         button, select {
+            text-transform: none;
+         }
+
+         .btn:focus{
+                     color: white;
+          }
 
       </style>
 </head>
 <body>
 <script type="text/javascript">
            var submitedData = {};
+           var dp1;
            var bookingsData = [];
            var roomsData = {};
+           var intervalId = setInterval(function() {
+                   refreshData();
+                   fetchBookings();
+                   fetchMaintenanceTasks();
+            }, 60000);
+
+        function getStayDuration(checkIn){
+	        var checkInTimeStamp = 0;
+	        var date = checkIn.split(" ")[0];
+	        var time = checkIn.split(" ")[1];
+	        var dateParts = date.split("/");
+	        var timeParts = time.split(":");
+	        var hours = parseInt(timeParts[0], 10);
+	        if(checkIn.split(" ")[2].toUpperCase() === "PM" && hours <12){
+    		    hours = hours + 12;
+    	    } else if(checkIn.split(" ")[2].toUpperCase() === "AM" && hours == 12){
+	    	    hours = 0;
+	        }
+	        var date = new Date(dateParts[2], parseInt(dateParts[1])-1, dateParts[0], hours, timeParts[1]);
+	        var epochDiff = Date.now() - date.getTime();
+	        var diffDays = parseInt((epochDiff)/(24*60*60*1000));
+	        epochDiff = epochDiff -  diffDays * 24*60*60*1000;
+	        var diffHours = parseInt((epochDiff) / (60*60*1000));
+	        return ((diffDays != 0) ? diffDays + " days " : "") + diffHours + " hours";
+         }
            function refreshData(){
                $.ajax({
                url: './get-status',
@@ -67,7 +110,8 @@
                success: function(data){
                  roomsData = data;
                  updateData();
-                 fetchSummary()
+                 fetchSummary();
+                 fetchMaintenanceTasks();
                },
                error: function (xhr, ajaxOptions, thrownError) {
                  $("#successIndicator").text(thrownError);
@@ -77,10 +121,14 @@
 
            $( document ).ready(function(){
                 $('#datepicker1').datetimepicker({
-                    format: 'DD/MM/YYYY LT'
+                    format: 'DD/MM/YYYY LT',
+                    showTodayButton: true,
+                    useCurrent : false
                 });
                 $('#datepicker2').datetimepicker({
-                    format: 'DD/MM/YYYY LT'
+                    format: 'DD/MM/YYYY LT',
+                    showTodayButton: true,
+                    useCurrent: false
                 });
                 refreshData();
                 fetchBookings();
@@ -92,7 +140,9 @@
                      case "AVAILABLE":
                         $("#" + key).removeClass("btn-warning")
                         .removeClass("btn-primary").removeClass("btn-danger")
+                        .removeClass("btn-blocked")
                         .addClass("btn-success");
+                        $("#" + key + "-meta").html("");
                         break;
                      case "OCCUPIED":
                         $("#" + key).removeClass("btn-primary").removeClass("btn-success")
@@ -104,6 +154,10 @@
                         break;
                      case "MAINTENANCE":
                         $("#" + key).removeClass("btn-success").addClass("btn-warning");
+                        break;
+                     case "BLOCKED":
+                        $("#" + key).removeClass("btn-success").addClass("btn-blocked");
+                        $("#" + key + "-meta").html(" - " + roomsData["roomsData"][key]["meta"]["name"]);
                         break;
                      default:
                         break;
@@ -140,12 +194,13 @@
                 postData['advance'] = parseInt($("#b-advance").val());
                 postData['remark'] = $("#b-remark").val();
 
+
               if(postData['name'].length == 0){
                 alert("Provide Valid Name");
                 return;
               }
 
-              if(postData['phone'].length != 10){
+              if(postData['phone'].length != 10 && !(postData['mode'] === 'InGoMMT')){
                 alert("Provide Valid Phone Number");
                 return;
               }
@@ -206,8 +261,7 @@
                dataType: "json",
                contentType:"application/json; charset=utf-8",
                success: function(data){
-
-                   $('#cancel-btn').click();
+                   $('#booking-cancel-btn').click();
                    $(".modal-backdrop").removeClass("modal-backdrop");
                    fetchBookings();
                },
@@ -223,9 +277,16 @@
               var postData = {};
               postData['room'] = room.trim();
               postData['roomStatus'] = action.toUpperCase();;
-              if(postData['roomStatus'] === 'MAINTENANCE' || postData['roomStatus'] === 'ROOMFIXED'){
+              if(postData['roomStatus'] === 'MAINTENANCE' || postData['roomStatus'] === 'ROOMFIXED' || postData['roomStatus'] === 'UNBLOCKED'){
 
-              } else{
+              } else if(postData['roomStatus'] === 'BLOCKED'){
+                postData['name'] = $("#name").val().trim();
+                if(postData['name'].length == 0){
+                    alert("Provide Valid Name");
+                    return;
+                }
+              }
+              else{
               postData['name'] = $("#name").val().trim();
               postData['phone'] = $("#phone").val().trim();
               postData['extraBed'] = $("#extraBed").prop('checked');
@@ -256,7 +317,7 @@
                 return;
               }
 
-             if(isNaN(postData['tariff']) || postData['tariff'] < 100){
+             if(isNaN(postData['tariff']) || postData['tariff'] == 0){
                 alert("Provide Valid Tariff");
                 return;
               }
@@ -290,7 +351,98 @@
                 }
                 postData['foodBill'] = parseInt($("#food-bill").val());
               }
+
+              if($("#bottles").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['bottles'] = null;
+              } else{
+                if(!isNumeric($("#bottles").val())){
+                    alert("Provide Valid Number of Water Bottles");
+                    return;
+                }
+                postData['bottles'] = parseInt($("#bottles").val());
+              }
+
+
+              if($("#combos").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['combos'] = null;
+              } else{
+                if(!isNumeric($("#combos").val())){
+                    alert("Provide Valid Number of Combos");
+                    return;
+                }
+                postData['combos'] = parseInt($("#combos").val());
+              }
+
+              if($("#cooldrinks").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['cooldrinks'] = null;
+              } else{
+                if(!isNumeric($("#cooldrinks").val())){
+                    alert("Provide Valid Number of Cool Drinks");
+                    return;
+                }
+                postData['cooldrinks'] = parseInt($("#cooldrinks").val());
+              }
+
+
+              if($("#cash").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['cash'] = 0;
+              } else{
+                if(!isNumeric($("#cash").val())){
+                    alert("Provide Valid Cash Amount");
+                    return;
+                }
+                postData['cash'] = parseInt($("#cash").val());
+              }
+
+
+
+             if($("#upi").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['upi'] = 0;
+              } else{
+                if(!isNumeric($("#upi").val())){
+                    alert("Provide Valid UPI Amount");
+                    return;
+                }
+                postData['upi'] = parseInt($("#upi").val());
+              }
+
+
+
+             if($("#card").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['foodBill'] = 0;
+              } else{
+                if(!isNumeric($("#card").val())){
+                    alert("Provide Valid Card Amount");
+                    return;
+                }
+                postData['card'] = parseInt($("#card").val());
+              }
+
+
+             if($("#ingommt").val() === '' && postData['roomStatus'] != 'CHECKOUT'){
+                postData['ingommt'] = 0;
+              } else{
+                if(!isNumeric($("#ingommt").val())){
+                    alert("Provide Valid InGoMMT Amount");
+                    return;
+                }
+                postData['ingommt'] = parseInt($("#ingommt").val());
+              }
+
+
+             if(postData['roomStatus'] === 'CHECKOUT'){
+                var totalBill = postData['foodBill'] + postData['roomBill'];
+                var paymentModesBill = postData['card'] + postData['upi'] + postData['cash'] + postData['ingommt'];
+                if(Math.abs(totalBill - paymentModesBill) > 20){
+                    alert("Total Bill: " + totalBill + " Payments Made : " + paymentModesBill + " are not matching");
+                    return;
+                }
              }
+
+             }
+
+
+
               $.ajax({
                url: './update-status',
                type: 'post',
@@ -312,28 +464,75 @@
            }
 
            function updateBookingModal(id){
-                var baseString = '<button type="button" id = "cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>';
+                var baseString = '<button type="button" id = "booking-cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>';
+                if(id == null){
+                    $("#b-modal-footer").html(baseString + addBooking());
+                    $("#b-name").val(null)
+                    $("#b-phone").val(null);
+                    $("#b-deluxe-rooms").val('-');
+                    $("#b-deluxe-tariff").val(null);
+                    $("#b-executive-rooms").val('-');
+                    $("#b-executive-tariff").val(null);
+                    $("#b-superior-rooms").val('-');
+                    $("#b-superior-tariff").val(null);
+                    $("#b-business-rooms").val('-');
+                    $("#b-business-tariff").val(null);
+                    $("#b-suite-rooms").val('-');
+                    $("#b-suite-tariff").val(null);
+                    $("#b-days").val(null);
+                    $("#b-plan").prop('checked', false);
+                    $("#b-extraBed").prop('checked', false);
+                    $("#b-mode").val('-');
+                    $("#datepicker2").val(null);
+                    $("#b-advance").val(null);
+                    $("#b-remark").val(null);
+                    $("#b-plan-div .toggle").removeClass("btn-success").addClass("btn-info").addClass("off");
+                    $("#b-plan").prop('checked', false);
+                    $("#b-extraBed-div .toggle").removeClass("btn-success").addClass("btn-default").addClass("off");
+                    $("#b-extraBed").prop('checked', false);
+                } else{
+                    var selectedBooking = bookingsData[id];
+                    $("#b-modal-footer").html(baseString + updateBooking(selectedBooking["id"]));
+                    $("#b-name").val(selectedBooking["name"])
+                    $("#b-phone").val(selectedBooking["phone"]);
+                    $("#b-deluxe-rooms").val(selectedBooking["deluxeRooms"] == null ? '-': selectedBooking["deluxeRooms"]);
+                    $("#b-deluxe-tariff").val(selectedBooking["deluxeTariff"] == null ? '': selectedBooking["deluxeTariff"]);
+                    $("#b-executive-rooms").val(selectedBooking["executiveRooms"] == null ? '-': selectedBooking["executiveRooms"]);
+                    $("#b-executive-tariff").val(selectedBooking["executiveTariff"] == null ? '': selectedBooking["executiveTariff"]);
+                    $("#b-superior-rooms").val(selectedBooking["superiorRooms"] == null ? '-': selectedBooking["superiorRooms"]);
+                    $("#b-superior-tariff").val(selectedBooking["superiorTariff"] == null ? '': selectedBooking["superiorTariff"]);
+                    $("#b-business-rooms").val(selectedBooking["businessRooms"] == null ? '-': selectedBooking["businessRooms"]);
+                    $("#b-business-tariff").val(selectedBooking["businessTariff"] == null ? '': selectedBooking["businessTariff"]);
+                    $("#b-suite-rooms").val(selectedBooking["suiteRooms"] == null ? '-': selectedBooking["suiteRooms"]);
+                    $("#b-suite-tariff").val(selectedBooking["suiteTariff"] == null ? '': selectedBooking["suiteTariff"]);
+                    $("#b-days").val(selectedBooking["days"]);
+                    switch(selectedBooking["plan"]){
+                      case "CP":
+                          $("#b-plan-div .toggle").removeClass("btn-info").removeClass("off").addClass("btn-success");
+                          $("#b-plan").prop('checked', true);
+                          break;
+                       default:
+                          $("#b-plan-div .toggle").removeClass("btn-success").addClass("btn-info").addClass("off");
+                          $("#b-plan").prop('checked', false);
+                          break;
+                     }
 
-                $("#b-modal-footer").html(baseString + addBooking());
-                $("#b-name").val(null)
-                $("#b-phone").val(null);
-                $("#b-deluxe-rooms").val('-');
-                $("#b-deluxe-tariff").val(null);
-                $("#b-executive-rooms").val('-');
-                $("#b-executive-tariff").val(null);
-                $("#b-superior-rooms").val('-');
-                $("#b-superior-tariff").val(null);
-                $("#b-business-rooms").val(null);
-                $("#b-business-tariff").val(null);
-                $("#b-suite-rooms").val();
-                $("#b-suite-tariff").val(null);
-                $("#b-days").val(null);
-                $("#b-plan").prop('checked', false);
-                $("#b-extraBed").prop('checked', false);
-                $("#b-mode").val('-');
-                $("#datepicker2").val(null);
-                $("#b-advance").val(null);
-                $("#b-remark").val(null);
+                  switch(selectedBooking["extraBed"]){
+                   case true:
+                    $("#b-extraBed-div .toggle").removeClass("btn-default").removeClass("off").addClass("btn-sucess");
+                    $("#b-extraBed").prop('checked', true);
+                    break;
+                   default:
+                    $("#b-extraBed-div .toggle").removeClass("btn-success").addClass("btn-default").addClass("off");
+                    $("#b-extraBed").prop('checked', false);
+                    break;
+                }
+                    $("#b-mode").val(selectedBooking["mode"]);
+                    $("#datepicker2").val(selectedBooking["checkInTime"]);
+                    $("#b-advance").val(selectedBooking["advance"]);
+                    $("#b-remark").val(selectedBooking["remark"]);
+                }
+
            }
 
            function updateModal(room){
@@ -349,6 +548,13 @@
                 $("#days").val(data["days"]);
                 $("#room-bill").val(data["roomBill"]);
                 $("#food-bill").val(data["foodBill"]);
+                $("#bottles").val(data["bottles"]);
+                $("#combos").val(data["combos"]);
+                $("#cooldrinks").val(data["cooldrinks"]);
+                $("#cash").val(data["cash"] == null ? 0 : data["cash"]);
+                $("#upi").val(data["upi"]== null ? 0 : data["upi"]);
+                $("#card").val(data["card"]== null ? 0 : data["card"]);
+                $("#ingommt").val(data["ingommt"]== null ? 0 : data["ingommt"]);
 
                 switch(data["plan"]){
                    case "CP":
@@ -374,7 +580,7 @@
                 var baseString = '<button type="button" id = "cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>';
                 switch(data["roomStatus"]){
                      case "AVAILABLE":
-                        baseString = baseString + '&nbsp' + maintenanceButton(room) + '&nbsp' + checkInButton(room);
+                        baseString = baseString + '&nbsp' + maintenanceButton(room) + '&nbsp' + blockedButton(room) + '&nbsp'  + checkInButton(room);
                         $("#modal-footer").html(baseString);
                         $('#checkout-info').css('display', 'none');
                         $('#r-modal-body').css('display', 'block');
@@ -399,6 +605,14 @@
                         $('#r-modal-body').css('display', 'none');
                         baseString = baseString + '&nbsp' + roomFixed(room);
                         $("#modal-footer").html(baseString);
+                        $('#checkoutHeading').html('<span id="checkoutTime"></span>');
+                        break;
+                     case "BLOCKED":
+                        $('#r-modal-body').css('display', 'none');
+                        baseString = baseString + '&nbsp' + unBlock(room);
+                        $('#checkoutHeading').html('<span id="checkoutTime"></span>');
+                        $("#modal-footer").html(baseString);
+                        break;
                      default:
                         break;
              }
@@ -442,6 +656,21 @@
            });
      }
 
+    function fetchMaintenanceTasks(){
+
+
+       $.ajax({
+               url: '/get-tasks',
+               type: 'get',
+               success: function(data){
+                  $("#maintenance-table").html(makeTasksTableHTML(data["tasks"]));
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               }
+           });
+     }
+
       function makeTableHTML(data) {
             var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:80%;font-size:17px;\"> <thead>\n" +
                 "    <tr>\n" +
@@ -452,6 +681,7 @@
                 "      <th scope=\"col\">Tariff</th>\n" +
                 "      <th scope=\"col\">Room</th>\n" +
                 "      <th scope=\"col\">Check-In</th>\n" +
+                "      <th scope=\"col\">Stayed Duration</th>\n" +
                 "      <th scope=\"col\">Extra Bed</th>\n" +
                 "      <th scope=\"col\">Remark</th>\n" +
                 "    </tr>\n" +
@@ -463,12 +693,13 @@
             for(var i=0; i<checkInSummaries.length; i++) {
                 result += "<tr>";
                 result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["name"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+checkInSummaries[i]["name"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["plan"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["guestCount"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["tariff"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["room"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+checkInSummaries[i]["checkInTime"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+checkInSummaries[i]["checkInTime"] + "</td>";
+                result += "<td style =\"white-space: nowrap;\">" +  getStayDuration(checkInSummaries[i]["checkInTime"]) + "</td>";
                 result += "<td style =\"word-break:break-all;\">"+(checkInSummaries[i]["extraBed"] ? 'Yes' : 'No') +"</td>";
                 result += "<td style =\"word-break:break-all;width:20%;\">"+checkInSummaries[i]["remark"] +"</td>";
                 result += "</tr>";
@@ -479,20 +710,98 @@
             return result;
          }
 
+      function deleteBooking(id){
+        var deletePostData = {};
+        var selectedBooking = bookingsData[id]["id"];
+        deletePostData["id"] = selectedBooking;
+            $.ajax({
+               url: './delete-booking',
+               type: 'post',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                   fetchBookings();
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               },
+               data: JSON.stringify(deletePostData)
+           });
+      }
+
+      function updateTask(id, status){
+        var task = {};
+        task["id"] = id;
+        task["taskStatus"] = status;
+            $.ajax({
+               url: '/update-task',
+               type: 'put',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                   fetchMaintenanceTasks();
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               },
+               data: JSON.stringify(task)
+           });
+      }
+
+
+      function makeTasksTableHTML(data) {
+      if(data.length == 0) return '';
+            var result =  "    <div class=\"row\" style=\"text-align:center;\">\n" +
+                "            <b style = \"font-size: 26px;\">Maintenance Tasks</b>\n" +
+                "    </div>";
+            result +="<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:80%;font-size:17px;\"> <thead>\n" +
+                "    <tr>\n" +
+                "      <th scope=\"col\">S.No</th>\n" +
+                "      <th scope=\"col\">Task Info</th>\n" +
+                "      <th scope=\"col\">Assigned To</th>\n" +
+                "      <th scope=\"col\" style = \"white-space: nowrap;\">Created At</th>\n" +
+                "      <th scope=\"col\">Done</th>\n" +
+                "      <th scope=\"col\">Not Needed</th>\n" +
+                "      <th scope=\"col\">Not Done</th>\n" +
+                "    </tr>\n" +
+                "  </thead>\n" +
+                "  <tbody>";
+
+            for(var i=0;i<data.length; i++) {
+                var task = data[i];
+                var date = new Date(task["createdAt"]);
+                var createdAt = date.toLocaleString('en-GB', { hour12:false } );
+                result += "<tr>";
+                result += "<td style =\"white-space: nowrap;\">"+(i+1) +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+task["taskInfo"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+task["assignedTo"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+ createdAt +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+"<button type=\"button\" onclick=\"updateTask('" + task["id"]+  "','DONE');\" class=\"btn btn-success border-dark\" style=\"padding: 0px 7px;font-size:18px\">Done</button>" +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+"<button type=\"button\" onclick=\"updateTask('" + task["id"]+  "','NOT_NEEDED');\" class=\"btn btn-warning border-dark\" style=\"padding: 0px 7px;font-size:18px\">Not Needed</button>" +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+"<button type=\"button\" onclick=\"updateTask('" + task["id"]+  "','NOT_DONE');\" class=\"btn btn-danger border-dark\" style=\"padding: 0px 7px;font-size:18px\">Not Done</button>" +"</td>";
+                result += "</tr>";
+                }
+            result += "</tbody></table>";
+            return result;
+         }
+
+
       function makeBookingTableHTML(data) {
             var result =         "<hr> <table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:80%;font-size:17px;\"> <thead>\n" +
                 "    <tr>\n" +
                 "      <th scope=\"col\">S.No</th>\n" +
                 "      <th scope=\"col\">Name</th>\n" +
                 "      <th scope=\"col\">Phone</th>\n" +
-                "      <th scope=\"col\">Rooms</th>\n" +
+                "      <th scope=\"col\" style = \"white-space: nowrap;\">Rooms</th>\n" +
                 "      <th scope=\"col\">Days</th>\n" +
                 "      <th scope=\"col\">Plan</th>\n" +
                 "      <th scope=\"col\">Extra Bed</th>\n" +
                 "      <th scope=\"col\">Advance</th>\n" +
-                "      <th scope=\"col\">Check-In</th>\n" +
+                "      <th scope=\"col\" style = \"white-space: nowrap;\">Check-In</th>\n" +
                 "      <th scope=\"col\">Mode</th>\n" +
                 "      <th scope=\"col\">Remark</th>\n" +
+                "      <th scope=\"col\">Edit</th>\n" +
+                "      <th scope=\"col\">Delete</th>\n" +
                 "    </tr>\n" +
                 "  </thead>\n" +
                 "  <tbody>";
@@ -500,17 +809,19 @@
             for(var i=0;i<data.length; i++) {
                 var booking = data[i];
                 result += "<tr>";
-                result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+booking["name"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+booking["phone"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+ getRoomsString(booking) +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+(i+1) +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+booking["name"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+booking["phone"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+ getRoomsString(booking) +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+booking["days"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+booking["plan"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+(booking["extraBed"] ? 'Yes' : 'No') +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+booking["advance"] +"</td>";
-                result += "<td style =\"word-break:break-all;\">"+booking["checkInTime"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+booking["advance"] +"</td>";
+                result += "<td style =\"white-space: nowrap;\">"+booking["checkInTime"] +"</td>";
                 result += "<td style =\"word-break:break-all;\">"+booking["mode"] +"</td>";
                 result += "<td style =\"word-break:break-all;width:20%;\">"+booking["remark"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+"<button type=\"button\" onclick=\"updateBookingModal(" + i +");\" data-toggle=\"modal\" data-target=\"#bookingModal\" class=\"btn btn-warning border-dark\" style=\"padding: 0px 7px;font-size:18px\">Edit</button>" +"</td>"
+                result += "<td style =\"word-break:break-all;\">"+"<button type=\"button\" onclick=\"deleteBooking(" + i +");\" class=\"btn btn-danger border-dark\" style=\"padding: 0px 7px;font-size:18px\">Delete</button>" +"</td>"
                 result += "</tr>";
                 }
                 result += "</tr>";
@@ -592,28 +903,44 @@
         return '<button type="button" class="btn btn-primary"  onclick="submitBookingData(null)">Add Booking</button>';
        }
 
+       function updateBooking(id){
+        return '<button type="button" class="btn btn-primary"  onclick="submitBookingData(' + id +')">Update</button>';
+       }
+
        function maintenanceButton(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'MAINTENANCE\''+ ')">Maintenance</button>';
+       }
+
+       function blockedButton(room){
+        return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'BLOCKED\''+ ')">Booked</button>';
        }
 
        function roomFixed(room){
         return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'ROOMFIXED\''+ ')">Room Fixed</button>';
        }
 
+       function unBlock(room){
+        return '<button type="button" class="btn btn-primary"  onclick="submitData(\''+ room + '\',' + '\'UNBLOCKED\''+ ')">Available</button>';
+       }
+
 </script>
+<div id ='maintenance-table'>
+
+</div>
+
 <div class="container">
     </br>
     <div class="row">
 
         <h4> Deluxe</h4>
         <div class="col-xs-4">
-            <button type="button" id="101" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('101');">101</button>
+            <button type="button" id="101" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('101');">101<span id="101-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="201" class="btn  btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('201');">201</button>
+            <button type="button" id="201" class="btn  btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('201');">201<span id="201-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="301" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('301');">301</button>
+            <button type="button" id="301" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('301');">301<span id="301-meta"></span></button>
         </div>
     </div>
     </br>
@@ -622,13 +949,13 @@
     <div class="row">
         <h4> Executive</h4>
         <div class="col-xs-4">
-            <button type="button" id="102" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('102');">102</button>
+            <button type="button" id="102" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('102');">102<span id="102-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="202" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('202');">202</button>
+            <button type="button" id="202" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('202');">202<span id="202-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="302" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('302');">302</button>
+            <button type="button" id="302" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('302');">302<span id="302-meta"></span></button>
         </div>
     </div>
     </br>
@@ -637,10 +964,10 @@
         <div class="col-xs-4">
         </div>
         <div class="col-xs-4">
-            <button type="button" id="205" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('205');">205</button>
+            <button type="button" id="205" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('205');">205<span id="205-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="305" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('305');">305</button>
+            <button type="button" id="305" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('305');">305<span id="305-meta"></span></button>
         </div>
     </div>
     <br/>
@@ -700,20 +1027,18 @@
                         <br/>
                         <br/>
                         <div class="row">
-                            <div class="col-xs-1" style="text-align:left;font-size: 17px;">
-                            </div>
-                            <div class="col-xs-6" style="text-align:center;font-size: 17px;">
-                                <label for="datepicker1">Check In <br></label>
+                            <div class="col-xs-8" style="text-align:center;font-size: 17px;">
+                                <label for="datepicker1">Check-In: &nbsp</label>
                                 <input id="datepicker1" autocomplete="off">
                             </div>
 
-                            <div class="col-xs-3" style="text-align:center;font-size: 17px;">
-                                <label>Tariff</label>
+                            <div class="col-xs-4" style="text-align:center;font-size: 17px;">
+                                <label>Tariff: &nbsp</label>
                                 <input id="tariff" maxlength="8" size="8" style="text-align:center;" autocomplete="off">
                             </div>
                         </div>
-
-                        <div class="row" id="checkout-info" style="text-align:center;">
+                        <div id="checkout-info">
+                        <div class="row"  style="text-align:center;">
                         </br>
                             <h3> Check-Out Info</h3>
                             <div class="col-xs-4" style="text-center:left;font-size: 17px;">
@@ -733,6 +1058,52 @@
                                 <input id="food-bill"  style="text-align:center;" maxlength="10" size="10" autocomplete="off"/>
                             </div>
                         </div>
+                            </br>
+                            <div class="row"  style="text-align:center;">
+                                <div class="col-xs-4" style="text-center:left;font-size: 17px;">
+                                    <label for="bottles">Water Bottles</label>
+                                    </br>
+                                    <input id="bottles"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" />
+                                </div>
+                                <div class="col-xs-4" style="text-center:left;font-size: 17px;">
+                                    <label for="combos">Combos</label>
+                                    </br>
+                                    <input id="combos"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" />
+                                </div>
+                                <div class="col-xs-4" style="text-center:left;font-size: 17px;">
+                                    <label for="cooldrinks">Cooldrinks</label>
+                                    </br>
+                                    <input id="cooldrinks"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" />
+                                </div>
+                            </div>
+                            </br>
+                            <div class="row"  style="text-align:center;">
+                                <div class="col-xs-3" style="text-center:left;font-size: 17px;">
+                                    <label for="days">Cash &nbsp</label>
+                                    </br>
+                                    <input id="cash"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" value ="0"/>
+                                </div>
+                                <div class="col-xs-3" style="text-center:left;font-size: 17px;">
+                                    <label for="days">UPI &nbsp</label>
+                                    </br>
+                                    <input id="upi"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" value ="0"/>
+                                </div>
+                                <div class="col-xs-3" style="text-center:left;font-size: 17px;">
+                                    <label for="days">Card &nbsp</label>
+                                    </br>
+                                    <input id="card"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" value ="0"/>
+                                </div>
+                                <div class="col-xs-3" style="text-center:left;font-size: 17px;">
+                                    <label for="days">InGoMMT &nbsp</label>
+                                    </br>
+                                    <input id="ingommt"  style="text-align:center;" maxlength="10" size="10" autocomplete="off" value ="0"/>
+                                </div>
+                                </br>
+
+                            </div>
+                        </br>
+                        </div>
+
                         <br/>
                         <br/>
                         <div class="form-group">
@@ -896,7 +1267,7 @@
                                 </select>
                             </div>
                             <div class="col-xs-6" style="text-align:center;font-size: 17px;">
-                                <label for="datepicker2">Check In <br></label>
+                                <label for="datepicker2">Check In </label> <br/>
                                 <input id="datepicker2" autocomplete="off">
                             </div>
 
@@ -922,32 +1293,33 @@
     <div class="row">
         <h4> Bussiness Class</h4>
         <div class="col-xs-4">
-            <button type="button" id="104" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('104');">104</button>
+            <button type="button" id="104" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('104');">104<span id="104-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="204" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('204');">204</button>
+            <button type="button" id="204" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('204');">204<span id="204-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="304" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('304');">304</button>
+            <button type="button" id="304" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('304');">304<span id="304-meta"></span></button>
         </div>
     </div>
     <br/>
     <div class="row">
         <h4> Suite</h4>
         <div class="col-xs-4">
-            <button type="button" id="103" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('103');">103</button>
+            <button type="button" id="103" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('103');">103<span id="103-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="203" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('203');">203</button>
+            <button type="button" id="203" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('203');">203<span id="203-meta"></span></button>
         </div>
         <div class="col-xs-4">
-            <button type="button" id="303" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('303');">303</button>
+            <button type="button" id="303" class="btn btn-block border-dark" data-toggle="modal" data-target="#myModal" onclick="updateModal('303');">303<span id="303-meta"></span></button>
         </div>
     </div>
     <br/>
     <div class="row" style="font-size:15px;">
             <button type="button" style = "padding: 8px 8px;" class="btn btn-success"></button> &nbsp Available &nbsp&nbsp
-            <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-danger"></button> &nbsp Occupied &nbsp&nbsp
+           <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-blocked"></button> &nbsp Booked &nbsp&nbsp
+           <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-danger"></button> &nbsp Occupied &nbsp&nbsp
             <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-primary"></button> &nbsp Checkout &nbsp&nbsp
             <button type="button" style = "padding: 8px 8px;font-size:14px;" class="btn btn-warning"></button> &nbsp Maintenance &nbsp&nbsp
     </div>
@@ -967,13 +1339,16 @@
             <b style = "font-size: 26px;">Advance Bookings</b>
         </div>
         <div class="col-xs-2">
-            <button type="button" onclick="updateBookingModal('304');" data-toggle="modal" data-target="#bookingModal" class="btn btn-warning btn-block border-dark" style="font-size:18px">Add Booking</button>
+            <button type="button" onclick="updateBookingModal(null);" data-toggle="modal" data-target="#bookingModal" class="btn btn-warning btn-block border-dark" style="font-size:18px">Add Booking</button>
         </div>
     </div>
 </div>
 <div class="row" id="bookingsContent">
     <div id ='booking-table'></div>
 </div>
+<br/><br/>
+
+
 
 </body>
 </html>

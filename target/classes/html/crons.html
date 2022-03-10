@@ -1,0 +1,237 @@
+<html>
+<head>
+    <style type="text/css">
+    .multiselect {
+    width:20em;
+    height:3em;
+    border:solid 1px #c0c0c0;
+    overflow:auto;
+}
+
+.multiselect label {
+    display:block;
+}
+
+.multiselect-on {
+    color:#ffffff;
+    background-color:#000099;
+}
+  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Maintenance Crons</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+  <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+  <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+  <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.7.14/js/bootstrap-datetimepicker.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.7.14/css/bootstrap-datetimepicker.min.css">
+
+</head>
+<body>
+<h2 style="text-align:center;">Task Schedulers <a href="https://www.freeformatter.com/cron-expression-generator-quartz.html" target="_blank"  style="font-size:16px;">(Generate Cron Exp)</a></h2>
+<div class="container">
+
+  <div class="row">
+      <button type="button" onclick="updateBookingModal();" data-toggle="modal" data-target="#bookingModal" class="btn btn-warning border-dark" style="font-size:18px">Add Task Scheduler</button>
+  </div>
+</div>
+<div id="summaryContent">
+
+</div>
+<div style="text-align:left" class="modal" id="bookingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button style="font-size:26px;" type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <h2 class="modal-title" style="text-align:center">Scheduler</h2>
+      </div>
+      <div class="modal-body">
+        <form>
+
+          <div class="row">
+            <div class="col-xs-6">
+              <label for="Playo" class="col-form-label"  style="font-size: 17px;">Cron Exp : &nbsp</label>
+              <input id="cron-expression"  style="text-align:center;" autocomplete="off">
+            </div>
+            <div class="col-xs-4" id="b-plan-div">
+              <label for="Cash" class="col-form-label"  style="font-size: 17px;">Room Level : &nbsp</label>
+
+              <input id="room-level" style="padding: 5px 10px;font-size: 14px;" type="checkbox" data-toggle="toggle" data-on="CP" data-off="EP" data-onstyle="success" data-offstyle="info" >
+
+            </div>
+          </div>
+          <br/><br/>
+
+          <div class="row">
+            <div class="col-xs-8" style="text-align:left;font-size: 17px;">
+              <label for="Playo" class="col-form-label"  style="font-size: 17px;">Assign To : &nbsp</label>
+              <select id = "assigned-to" style="font-size: 17px;padding: 5px 15px;" class="form-select" aria-label="Default select example">
+                <option selected>-</option>
+                <option value="Night Receptionist">Night Receptionist</option>
+                <option value="Morning Receptionist">Morning Receptionist</option>
+                <option value="Evening Receptionist">Evening Receptionist</option>
+                <option value="Boy">Boy</option>
+                <option value="House Keeping">House Keeping</option>
+                <option value="Vamsi">Vamsi</option>
+              </select>
+            </div>
+          </div>
+          <br/>
+          <div class="form-group">
+            <label for="message-text" class="col-form-label" style="font-size: 17px;">Flock Message:</label>
+            <textarea class="form-control" id="flock-message" style="font-size: 17px;"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="message-text" class="col-form-label" style="font-size: 17px;">Portal Message:</label>
+            <textarea class="form-control" id="portal-message" style="font-size: 17px;"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" id="b-modal-footer">
+        <button type="button" id = "cancel-btn" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary"  onclick="addCron()">Add Scheduler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function updateBookingModal(){
+      $('#cron-expression').val('');
+      $('#room-level').attr('checked', false);
+      $('#assigned-to').val('-');
+      $('#flock-message').val('');
+      $('#portal-message').val('');
+    }
+
+    function deleteCron(id){
+        var deletePostData = {};
+        deletePostData["id"] = "" + id;
+            $.ajax({
+               url: '/delete-cron',
+               type: 'put',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                  updateCrons();
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               },
+               data: JSON.stringify(deletePostData)
+           });
+    }
+
+    function addCron(){
+        var postData = {};
+        postData['cron_expression'] = $('#cron-expression').val();
+        postData['differentiate_rooms'] = $('#room-level').is(":checked")
+        postData['assigned_to'] = $('#assigned-to').val();
+        postData['flock_message'] =  $('#flock-message').val();
+        postData['portal_message'] = $('#portal-message').val();
+
+        if(postData['cron_expression'].length == 0){
+                alert("Provide Valid Cron Expression");
+                return;
+        }
+
+         if(postData['assigned_to'] === '-'){
+                alert("Assign Task Properly");
+                return;
+        }
+
+        if(postData['flock_message'].length == 0){
+                alert("Provide Valid Flock Message");
+                return;
+        }
+
+
+        if(postData['portal_message'].length == 0){
+                alert("Provide Valid Portal Message");
+                return;
+        }
+
+         $.ajax({
+               url: '/add-cron',
+               type: 'post',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                  $('#cancel-btn').click();
+                  $(".modal-backdrop").removeClass("modal-backdrop");
+                  updateCrons();
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                  $('#cancel-btn').click();
+                  $(".modal-backdrop").removeClass("modal-backdrop");
+                  alert("Invalid Cron Expression Provided");
+               },
+               data: JSON.stringify(postData)
+           });
+    }
+
+    $( document ).ready(function(){
+        updateCrons()
+    });
+
+    function updateCrons(){
+       $.ajax({
+               url: '/get-crons',
+               type: 'get',
+               dataType: "json",
+               contentType:"application/json; charset=utf-8",
+               success: function(data){
+                  $("#summaryContent").html(makeTableHTML(data));
+
+               },
+               error: function (xhr, ajaxOptions, thrownError) {
+                 $("#successIndicator").text(thrownError);
+               }
+           });
+      }
+
+      function makeTableHTML(data) {
+            var result =         "<hr> <br/><table class=\"table table-bordered\" style = \"text-align:left;margin-left: auto;margin-right: auto;width:60%;\"> <thead>\n" +
+                "    <tr>\n" +
+                "      <th scope=\"col\">S.No</th>\n" +
+                "      <th scope=\"col\">Cron Expression</th>\n" +
+                "      <th scope=\"col\">Assigned To</th>\n" +
+                "      <th scope=\"col\">Flock Message</th>\n" +
+                "      <th scope=\"col\">Portal Message</th>\n" +
+                "      <th scope=\"col\">Add Per Room</th>\n" +
+                "      <th scope=\"col\">Delete</th>\n" +
+                "    </tr>\n" +
+                "  </thead>\n" +
+                "  <tbody>";
+
+            var cronJobs = data["cronJobs"];
+            for(var i=0; i<cronJobs.length; i++) {
+                result += "<tr>";
+                result += "<td style =\"word-break:break-all;\">"+(i+1) +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+cronJobs[i]["cron_expression"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+cronJobs[i]["assigned_to"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+cronJobs[i]["flock_message"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+cronJobs[i]["portal_message"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">"+cronJobs[i]["differentiate_rooms"] +"</td>";
+                result += "<td style =\"word-break:break-all;\">" + "<button type=\"button\" onclick=\"deleteCron(" + cronJobs[i]["id"] +");\" class=\"btn btn-danger border-dark\" style=\"padding: 0px 7px;font-size:18px\">Delete</button>" +  "</td>";
+                result += "</tr>";
+                }
+
+            result += "</tbody></table>";
+            return result;
+         }
+    </script>
+</body>
+</html>

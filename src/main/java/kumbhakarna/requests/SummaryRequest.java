@@ -13,6 +13,8 @@ public class SummaryRequest implements Serializable {
     private String startDate;
     @JsonProperty(value = "endDate")
     private String endDate;
+    @JsonProperty(value = "password")
+    private String password;
     @JsonProperty(value = "getCurrentRooms")
     private Boolean getCurrentRooms;
 }

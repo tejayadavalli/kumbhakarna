@@ -38,6 +38,20 @@ public class UpdateRoomStatusRequest implements Serializable {
     private Integer roomBill;
     @JsonProperty(value = "foodBill")
     private Integer foodBill;
+    @JsonProperty(value = "bottles")
+    private Integer bottles;
+    @JsonProperty(value = "combos")
+    private Integer combos;
+    @JsonProperty(value = "cooldrinks")
+    private Integer cooldrinks;
+    @JsonProperty(value ="cash")
+    private final Integer cash;
+    @JsonProperty(value ="upi")
+    private final Integer upi;
+    @JsonProperty(value ="card")
+    private final Integer card;
+    @JsonProperty(value ="ingommt")
+    private final Integer ingommt;
 
     public RoomStatus getRoomStatus(){
         return RoomStatus.valueOf(roomStatus);
